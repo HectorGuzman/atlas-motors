@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Atlas Motors · Vehículos inspeccionados en la Región de Coquimbo</title>
+  <meta name="description" content="El primer marketplace de vehículos inspeccionados por Atlas Motors en la Región de Coquimbo. Inspección precompra y búsqueda personalizada de vehículos.">
+  <meta name="theme-color" content="#070a08">
+  <meta property="og:title" content="Atlas Motors">
+  <meta property="og:description" content="Vehículos inspeccionados, inspección precompra y búsqueda personalizada en la Región de Coquimbo.">
+  <meta property="og:image" content="assets/img/logo-wordmark.jpg">
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <div class="demo-bar">Versión demo · Los vehículos, precios y pagos son de ejemplo</div>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a href="#/" class="brand" aria-label="Atlas Motors, inicio">
+        <img src="assets/img/logo-wordmark.jpg" alt="Atlas Motors">
+      </a>
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav"></button>
+      <nav class="nav" id="nav">
+        <a href="#/" data-nav="home">Inicio</a>
+        <a href="#/autos" data-nav="autos">Vehículos</a>
+        <a href="#/inspeccion" data-nav="inspeccion">Inspección precompra</a>
+        <a href="#/busqueda" data-nav="busqueda">Búsqueda personalizada</a>
+        <a href="#/agendar" class="btn btn--gold btn--sm" data-nav="agendar">Agendar inspección</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <img class="wm" src="assets/img/logo-wordmark.jpg" alt="Atlas Motors">
+          <p>El primer marketplace con vehículos inspeccionados por Atlas Motors en la Región de Coquimbo. Compra con ojo de águila.</p>
+        </div>
+        <div>
+          <h4>Servicios</h4>
+          <ul>
+            <li><a href="#/inspeccion">Inspección precompra</a></li>
+            <li><a href="#/busqueda">Búsqueda personalizada</a></li>
+            <li><a href="#/autos">Vehículos inspeccionados</a></li>
+            <li><a href="#/agendar">Agendar inspección</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Cobertura</h4>
+          <ul>
+            <li>La Serena</li>
+            <li>Coquimbo</li>
+            <li>Ovalle</li>
+            <li>Vicuña · Illapel (consultar)</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          <ul>
+            <li>+56 9 0000 0000</li>
+            <li>contacto@atlasmotors.cl</li>
+            <li>Lun a sáb · 9:00 – 19:00</li>
+            <li>@atlasmotors.cl</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 Atlas Motors · Región de Coquimbo, Chile</span>
+        <span>Fotos de vehículos: Wikimedia Commons (CC BY-SA), solo de referencia.</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="helper" id="helper"></div>
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Galería de fotos"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
