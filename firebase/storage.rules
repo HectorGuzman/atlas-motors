@@ -1,0 +1,25 @@
+rules_version = '2';
+// Fotos de inspecciones: fotos/{inspeccion}/{archivo}.jpg
+// Solo el equipo (documento en Firestore equipo/{uid}) las sube y las ve.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function esEquipo() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/equipo/$(request.auth.uid));
+    }
+
+    match /fotos/{inspeccion}/{archivo} {
+      allow read: if esEquipo();
+      // Solo imágenes de hasta 10 MB. Cada foto tiene un nombre único, así que
+      // en la práctica no se pisan. No se borran desde la app.
+      allow write: if esEquipo()
+        && request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /{todo=**} {
+      allow read, write: if false;
+    }
+  }
+}

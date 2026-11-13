@@ -5,7 +5,9 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -154,7 +156,10 @@ class Inspection {
 /// - Las inspecciones se guardan en el teléfono (funciona sin señal) y se
 ///   respaldan en Firestore, colección `inspecciones`. Al abrir la app o
 ///   iniciar sesión se trae lo de la nube y gana la copia modificada más tarde.
-/// - Las fotos todavía quedan solo en el teléfono (falta Cloud Storage).
+/// - Las fotos se guardan en el teléfono y se suben a Cloud Storage
+///   (bucket `atlas-motors-cl-fotos`, ruta fotos/{inspección}/{archivo}).
+///   Las que no alcanzan a subir quedan en cola; las que faltan en este
+///   teléfono se descargan al sincronizar.
 class Store extends ChangeNotifier {
   Store._();
   static final Store I = Store._();
@@ -170,6 +175,12 @@ class Store extends ChangeNotifier {
 
   FirebaseAuth get _auth => FirebaseAuth.instance;
   CollectionReference<Map<String, dynamic>> get _col => FirebaseFirestore.instance.collection('inspecciones');
+  Reference get _fotosNube => FirebaseStorage.instanceFor(bucket: 'gs://atlas-motors-cl-fotos').ref('fotos');
+
+  /// Fotos por subir: "inspección/archivo". Se guarda en disco para reintentar.
+  Set<String> _porSubir = {};
+  bool _subiendo = false;
+  File get _colaFile => File('${_dir.path}/fotos-por-subir.json');
 
   String get userName {
     final n = (userEmail ?? '').split('@').first.replaceAll(RegExp(r'[._]'), ' ').trim();
@@ -191,6 +202,9 @@ class Store extends ChangeNotifier {
     } else {
       inspections = [_ejemplo()];
       await _writeLocal();
+    }
+    if (await _colaFile.exists()) {
+      _porSubir = Set<String>.from(jsonDecode(await _colaFile.readAsString()) as List);
     }
     userEmail = _auth.currentUser?.email;
     if (userEmail != null) unawaited(sync());
@@ -298,6 +312,58 @@ class Store extends ChangeNotifier {
     } catch (e) {
       debugPrint('Sincronización pendiente: $e');
     }
+    await _subirFotos();
+    await _bajarFotos();
+  }
+
+  /// Sube las fotos en cola, una por una. Si falla (sin señal), quedan para la próxima.
+  Future<void> _subirFotos() async {
+    if (_subiendo || _auth.currentUser == null) return;
+    _subiendo = true;
+    try {
+      for (final clave in _porSubir.toList()) {
+        final file = photoFile(clave.split('/').last);
+        if (!await file.exists()) {
+          _porSubir.remove(clave);
+          continue;
+        }
+        try {
+          await _fotosNube.child(clave).putFile(file, SettableMetadata(contentType: 'image/jpeg'));
+          _porSubir.remove(clave);
+          await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
+        } catch (e) {
+          debugPrint('Foto pendiente $clave: $e');
+          break;
+        }
+      }
+    } finally {
+      _subiendo = false;
+    }
+  }
+
+  /// Descarga las fotos de la nube que no están en este teléfono.
+  Future<void> _bajarFotos() async {
+    var nuevas = false;
+    for (final i in inspections) {
+      if (i.id == _ejemploId) continue;
+      for (final r in i.results.values) {
+        for (final f in r.fotos) {
+          final file = photoFile(f);
+          if (await file.exists() || _porSubir.contains('${i.id}/$f')) continue;
+          try {
+            await _fotosNube.child('${i.id}/$f').writeToFile(file);
+            nuevas = true;
+          } catch (e) {
+            debugPrint('No se pudo bajar $f: $e');
+            if (await file.exists()) await file.delete();
+          }
+        }
+      }
+    }
+    if (nuevas) {
+      PaintingBinding.instance.imageCache.clear();
+      notifyListeners();
+    }
   }
 
   String _id() => DateTime.now().microsecondsSinceEpoch.toRadixString(36) + Random().nextInt(1296).toRadixString(36);
@@ -330,9 +396,14 @@ class Store extends ChangeNotifier {
   }
 
   /// Copia una foto elegida a la carpeta de la app y devuelve su nombre.
-  Future<String> addPhoto(String sourcePath) async {
+  Future<String> addPhoto(String sourcePath, Inspection i) async {
     final name = '${_id()}.jpg';
     await File(sourcePath).copy(photoFile(name).path);
+    if (i.id != _ejemploId) {
+      _porSubir.add('${i.id}/$name');
+      await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
+      unawaited(_subirFotos());
+    }
     return name;
   }
 

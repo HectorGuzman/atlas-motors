@@ -132,7 +132,7 @@ class _ItemCardState extends State<_ItemCard> {
     try {
       final x = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 75);
       if (x == null) return;
-      r.fotos.add(await Store.I.addPhoto(x.path));
+      r.fotos.add(await Store.I.addPhoto(x.path, widget.inspection));
       _changed();
     } catch (_) {
       if (!mounted) return;
@@ -206,7 +206,7 @@ class _ItemCardState extends State<_ItemCard> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Image.file(Store.I.photoFile(r.fotos[k]), width: 96, height: 72, fit: BoxFit.cover,
-                        // La foto puede no estar en este teléfono (se tomó en otro): por ahora solo viajan los datos.
+                        // La foto puede no estar todavía en este teléfono (se tomó en otro y se está bajando).
                         errorBuilder: (_, _, _) => Container(
                             width: 96, height: 72, color: const Color(0xFFEFE8D6),
                             child: const Icon(Icons.cloud_off_outlined, color: Color(0xFF8E9A92)))),

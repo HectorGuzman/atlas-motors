@@ -1,16 +1,24 @@
-"""Publica firestore.rules en el proyecto atlas-motors-cl usando el login de gcloud.
+"""Publica las reglas de Firestore y Storage en el proyecto atlas-motors-cl
+usando el login de gcloud.
 
 Uso: python3 firebase/deploy_rules.py
-(Alternativa equivalente cuando esté instalado el CLI: firebase deploy --only firestore:rules)
 """
 import json
 import pathlib
 import subprocess
+import urllib.error
 import urllib.request
 
 PROJECT = 'atlas-motors-cl'
-RULES = pathlib.Path(__file__).with_name('firestore.rules').read_text()
+AQUI = pathlib.Path(__file__).parent
 TOKEN = subprocess.check_output(['gcloud', 'auth', 'print-access-token'], text=True).strip()
+
+# release -> archivo de reglas
+RELEASES = {
+    'cloud.firestore': 'firestore.rules',
+    'firebase.storage/atlas-motors-cl-fotos': 'storage.rules',
+    'firebase.storage/atlas-motors-cl.firebasestorage.app': 'storage-cerrado.rules',
+}
 
 
 def call(method, url, body):
@@ -21,7 +29,14 @@ def call(method, url, body):
 
 
 base = f'https://firebaserules.googleapis.com/v1/projects/{PROJECT}'
-rs = call('POST', f'{base}/rulesets', {'source': {'files': [{'name': 'firestore.rules', 'content': RULES}]}})
-rel = call('PATCH', f'{base}/releases/cloud.firestore',
-           {'release': {'name': f'projects/{PROJECT}/releases/cloud.firestore', 'rulesetName': rs['name']}})
-print('Reglas publicadas:', rel['rulesetName'])
+for release, archivo in RELEASES.items():
+    texto = (AQUI / archivo).read_text()
+    rs = call('POST', f'{base}/rulesets', {'source': {'files': [{'name': archivo, 'content': texto}]}})
+    nombre = f'projects/{PROJECT}/releases/{release}'
+    try:
+        call('PATCH', f'{base}/releases/{release}', {'release': {'name': nombre, 'rulesetName': rs['name']}})
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+        call('POST', f'{base}/releases', {'name': nombre, 'rulesetName': rs['name']})
+    print(f'{archivo} -> {release}')

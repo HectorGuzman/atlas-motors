@@ -1,0 +1,10 @@
+rules_version = '2';
+// Bucket por defecto (atlas-motors-cl.firebasestorage.app, en Santiago): no se usa.
+// Las fotos van en atlas-motors-cl-fotos (us-central1, con cuota gratis).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{todo=**} {
+      allow read, write: if false;
+    }
+  }
+}

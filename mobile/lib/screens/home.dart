@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('¿Cerrar sesión?'),
-        content: const Text('Tus inspecciones quedan respaldadas en la nube. Las fotos quedan en este teléfono.'),
+        content: const Text('Tus inspecciones y fotos quedan respaldadas en la nube.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Cerrar sesión')),
