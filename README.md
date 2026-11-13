@@ -1,28 +1,27 @@
-# Atlas Motors — mockup web
+# Atlas Motors — sitio web
 
-Mockup visual de la plataforma de **Atlas Motors**, el primer marketplace de vehículos inspeccionados en la Región de Coquimbo, con servicios de inspección precompra y búsqueda personalizada.
+Sitio de **Atlas Motors**: inspección precompra de vehículos y búsqueda personalizada en la Región de Coquimbo. Publicado en GitHub Pages: https://hectorguzman.github.io/atlas-motors/
 
-> Versión demo: los vehículos, precios, pagos y notificaciones son de ejemplo. Todavía no hay backend.
+Sin backend: las solicitudes (agenda y búsqueda) se envían por WhatsApp al +56 9 3559 5554, con el mensaje ya armado. El abono del 50 % se paga por transferencia, coordinada por WhatsApp.
 
 ## Secciones
 
 | Ruta | Contenido |
 |---|---|
-| `#/` | Inicio: hero, buscador, autos destacados, servicios, pasos, mascota "¿Te ayudo?" y testimonios |
-| `#/autos` | Marketplace con filtros (tipo, marca, transmisión, precio) y orden |
-| `#/auto/:id` | Detalle con galería de fotos, video de inspección, puntaje, checklist por categoría y descarga de informe |
-| `#/informe/:id` | Informe de inspección imprimible y descargable como PDF |
-| `#/inspeccion` | Servicio de inspección precompra: qué es, cifras, qué incluye y precios |
-| `#/agendar` | Agenda en 4 pasos: plan, calendario y hora, datos y dirección, abono del 50 % (simulado) y confirmación |
-| `#/busqueda` | Búsqueda personalizada: cómo funciona, modelo sin costo y formulario |
+| `#/` | Inicio: servicios, cómo funciona, mascota "¿Te ayudo?" y aviso del marketplace (próximamente) |
+| `#/inspeccion` | Inspección precompra: recorrido en 8 etapas, inspección remota, "no es un diagnóstico" y precio |
+| `#/agendar` | Agenda en 3 pasos: día y hora, vehículo y datos, envío por WhatsApp |
+| `#/busqueda` | Búsqueda personalizada: cómo funciona y formulario que se envía por WhatsApp |
+| `#/informe` | Informe de inspección de ejemplo |
+| `#/autos` | Marketplace: por ahora una página de "próximamente" |
 
 ## Stack
 
 HTML, CSS y JavaScript puros, sin build. El router funciona por hash para que el sitio corra en GitHub Pages.
 
-- `index.html`: layout (header, footer, ayudante flotante)
+- `index.html`: layout (header, footer, ayudante flotante). Al publicar cambios, sube el `?v=N` de los CSS/JS para evitar caché.
 - `assets/css/styles.css`: design system (verde bosque + dorado del logo)
-- `assets/js/data.js`: datos de ejemplo (más adelante vendrán de la API)
+- `assets/js/data.js`: checklist, precio y el auto del informe de ejemplo
 - `assets/js/app.js`: vistas y lógica
 
 ## Correr localmente

@@ -1,6 +1,6 @@
-/* Atlas Motors — mockup SPA (sin dependencias, router por hash) */
+/* Atlas Motors — sitio web (sin dependencias, router por hash) */
 (function () {
-  const { CARS, CHECKLIST, PLANES, TESTIMONIOS, ABONO } = window.ATLAS;
+  const { CARS, CHECKLIST, PLANES, ABONO } = window.ATLAS;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   let app = $('#app'); // se reemplaza en cada ruta para soltar listeners viejos
@@ -13,6 +13,11 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const carById = (id) => CARS.find((c) => c.id === id);
   const title = (c) => `${c.marca} ${c.modelo} ${c.anio}`;
+
+  /* Contacto: WhatsApp Business de Atlas Motors */
+  const WA = '56935595554';
+  const TEL = '+56 9 3559 5554';
+  const waLink = (msg) => `https://wa.me/${WA}${msg ? '?text=' + encodeURIComponent(msg) : ''}`;
 
   const ICONS = {
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -73,25 +78,6 @@
   const statusCls = { ok: '', obs: 'w', fail: 'b' };
 
   /* ---------------- componentes ---------------- */
-  const carCard = (c) => `
-    <a class="car-card" href="#/auto/${c.id}">
-      <div class="car-card__media">
-        <img src="${c.fotos[0]}" alt="${esc(title(c))}" loading="lazy">
-        <span class="seal"><img src="assets/img/logo-shield.jpg" alt="">Inspeccionado</span>
-        <span class="score">${c.score}/100</span>
-        <span class="count">${ic('camera')} ${c.fotos.length} · ${ic('play')} Video</span>
-      </div>
-      <div class="car-card__body">
-        <h3 class="car-card__title">${esc(c.marca)} ${esc(c.modelo)} ${c.anio}</h3>
-        <div class="car-card__ver">${esc(c.version)}</div>
-        <div class="car-card__specs"><span>${km(c.km)}</span><span>${c.transmision}</span><span>${c.combustible}</span><span>${c.traccion}</span></div>
-        <div class="car-card__foot">
-          <span class="price">${clp(c.precio)}</span>
-          <span class="car-card__loc">${ic('pin')} ${c.comuna}</span>
-        </div>
-      </div>
-    </a>`;
-
   const scannerArt = () => `
     <svg viewBox="0 0 600 460" role="img" aria-label="Escáner automotriz conectado al puerto OBD">
       <defs>
@@ -136,66 +122,41 @@
 
   /* ---------------- vistas ---------------- */
   function viewHome() {
-    const feat = CARS.filter((c) => c.destacado);
-    const hero = CARS[0];
-    const marcas = [...new Set(CARS.map((c) => c.marca))].sort();
+    const completa = PLANES[0];
     return `
     <section class="hero">
       <div class="container hero__inner">
         <div>
-          <span class="hero__badge"><span>NUEVO</span> Región de Coquimbo</span>
+          <span class="hero__badge"><span>ATLAS</span> Región de Coquimbo</span>
           <h1>Compra tu próximo auto con <span class="gold-text">ojo de águila</span>
-            <small>El primer marketplace con vehículos <b>inspeccionados por Atlas Motors</b> en la Región de Coquimbo. Cada auto trae fotos, video e informe técnico descargable.</small>
+            <small>Inspección precompra profesional en la Región de Coquimbo. Revisamos el auto <b>antes de que pagues</b>: carrocería, estructura, motor, escáner y prueba de ruta. Presencial o remota.</small>
           </h1>
           <div class="hero__cta">
-            <a href="#/autos" class="btn btn--gold btn--lg">Ver vehículos inspeccionados ${ic('arrow')}</a>
-            <a href="#/inspeccion" class="btn btn--ghost btn--lg">Inspeccionar un auto</a>
+            <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar inspección</a>
+            <a href="${waLink('Hola Atlas Motors, quiero agendar una inspección precompra.')}" target="_blank" rel="noopener" class="btn btn--ghost btn--lg">${ic('chat')} Escríbenos por WhatsApp</a>
           </div>
           <div class="hero__stats">
-            <div><b>+480</b><span>inspecciones realizadas</span></div>
             <div><b>8</b><span>etapas de revisión</span></div>
-            <div><b>24 h</b><span>entrega del informe</span></div>
+            <div><b>${clp(completa.precio)}</b><span>inspección completa</span></div>
+            <div><b>${ABONO * 100} %</b><span>de abono para reservar</span></div>
           </div>
         </div>
         <div class="hero__visual">
-          <a class="hero-card" href="#/auto/${hero.id}">
-            <img src="${hero.fotos[0]}" alt="${esc(title(hero))}">
-            <div class="hero-card__info">
-              <div><h3>${esc(title(hero))}</h3><p>${clp(hero.precio)}</p></div>
-              <span class="score" style="position:static">${hero.score}/100</span>
-            </div>
-          </a>
-          <div class="float-chip float-chip--a"><span class="ic">${ic('shield')}</span><div><b>Inspección aprobada</b>Sin choques estructurales</div></div>
-          <div class="float-chip float-chip--b"><span class="ic">${ic('doc')}</span><div><b>Informe PDF</b>Checklist en 8 etapas</div></div>
+          <div class="scanner-art">${scannerArt()}</div>
+          <div class="float-chip float-chip--a"><span class="ic">${ic('shield')}</span><div><b>Medidor de pintura</b>Detecta repintados y choques</div></div>
+          <div class="float-chip float-chip--b"><span class="ic">${ic('doc')}</span><div><b>Informe PDF</b>Con fotos y costos de reparación</div></div>
         </div>
       </div>
     </section>
 
     <div class="container">
-      <form class="search" id="homeSearch">
-        <div class="field"><label for="q">¿Qué buscas?</label><input class="input" id="q" name="q" placeholder="Ej: Ranger Raptor, SUV, Kia…"></div>
-        <div class="field"><label for="hm">Marca</label><select class="select" id="hm" name="marca"><option value="">Todas</option>${marcas.map((m) => `<option>${m}</option>`).join('')}</select></div>
-        <div class="field"><label for="hp">Precio hasta</label><select class="select" id="hp" name="max"><option value="">Sin límite</option><option value="10000000">$10.000.000</option><option value="15000000">$15.000.000</option><option value="20000000">$20.000.000</option><option value="30000000">$30.000.000</option></select></div>
-        <button class="btn btn--gold" type="submit">${ic('search')} Buscar</button>
-      </form>
-
       <div class="trust">
-        <div class="trust__item"><span class="ic">${ic('shield')}</span><div><b>100 % inspeccionados</b><span>Ningún auto se publica sin pasar por Atlas.</span></div></div>
-        <div class="trust__item"><span class="ic">${ic('doc')}</span><div><b>Informe descargable</b><span>Checklist completo, fotos y escáner.</span></div></div>
-        <div class="trust__item"><span class="ic">${ic('camera')}</span><div><b>Fotos y video reales</b><span>Tomados el día de la inspección.</span></div></div>
+        <div class="trust__item"><span class="ic">${ic('scan')}</span><div><b>Recorrido en 8 etapas</b><span>Siempre en el mismo orden, sin saltarse nada.</span></div></div>
+        <div class="trust__item"><span class="ic">${ic('doc')}</span><div><b>Informe con fotos</b><span>Checklist completo y costo estimado de reparaciones.</span></div></div>
+        <div class="trust__item"><span class="ic">${ic('video')}</span><div><b>Inspección remota</b><span>Si no puedes ir, te mandamos todo en vivo.</span></div></div>
         <div class="trust__item"><span class="ic">${ic('pin')}</span><div><b>Hecho en Coquimbo</b><span>La Serena, Coquimbo, Ovalle y más.</span></div></div>
       </div>
     </div>
-
-    <section class="section">
-      <div class="container">
-        <div class="section__head">
-          <div><span class="eyebrow">Marketplace</span><h2>Vehículos inspeccionados</h2><p>Autos revisados punto por punto. Pincha uno para ver fotos, video y descargar su informe.</p></div>
-          <a href="#/autos" class="btn btn--outline">Ver los ${CARS.length} vehículos ${ic('arrow')}</a>
-        </div>
-        <div class="grid grid--cars">${feat.map(carCard).join('')}</div>
-      </div>
-    </section>
 
     <section class="section dark">
       <div class="container">
@@ -205,9 +166,9 @@
         <div class="services">
           <a class="service-card" href="#/inspeccion">
             <span class="bg-icon">${ic('scan')}</span>
-            <span class="pill" style="align-self:start;margin-bottom:auto">Desde ${clp(PLANES[0].precio)}</span>
+            <span class="pill" style="align-self:start;margin-bottom:auto">${clp(completa.precio)}</span>
             <h3>Inspección precompra</h3>
-            <p>Vamos a donde está el auto con escáner y medidor de pintura. ¿No puedes ir? Te mandamos cada hallazgo con foto en tiempo real y el informe en PDF.</p>
+            <p>Vamos a donde está el auto con escáner y medidor de pintura. ¿No puedes ir? Te mandamos cada hallazgo con foto en el momento y el informe en PDF.</p>
             <span class="link">Ver servicio y agendar ${ic('arrow')}</span>
           </a>
           <a class="service-card" href="#/busqueda">
@@ -225,10 +186,10 @@
       <div class="container">
         <div class="section__head"><div><span class="eyebrow">Así funciona</span><h2>Comprar seguro en 4 pasos</h2></div></div>
         <div class="steps">
-          <div class="step"><h4>Elige o encuentra</h4><p>Explora el marketplace o pídenos que busquemos el auto ideal para ti.</p></div>
-          <div class="step"><h4>Agenda online</h4><p>Elige día, hora y dirección. Reserva con el 50 % de abono.</p></div>
+          <div class="step"><h4>Agenda</h4><p>Cuéntanos qué auto es, dónde está y qué día te acomoda. Aquí o por WhatsApp.</p></div>
+          <div class="step"><h4>Reserva tu hora</h4><p>Con el ${ABONO * 100} % de abono (${clp(completa.precio * ABONO)}) por transferencia. El resto, el día de la inspección.</p></div>
           <div class="step"><h4>Inspeccionamos</h4><p>8 etapas: carrocería, estructura, motor, parte baja, interior, escáner y prueba de ruta.</p></div>
-          <div class="step"><h4>Decide con datos</h4><p>Recibe el informe con fotos y video. Compra o negocia con respaldo.</p></div>
+          <div class="step"><h4>Decide con datos</h4><p>Recibe el informe con fotos y el costo de cada reparación. Compra o negocia con respaldo.</p></div>
         </div>
       </div>
     </section>
@@ -244,23 +205,9 @@
             <div class="mascot__actions">
               <a class="btn btn--green" href="#/agendar">${ic('calendar')} Agendar inspección</a>
               <a class="btn btn--outline" href="#/busqueda">${ic('target')} Búscame un auto</a>
-              <button class="btn btn--outline" data-action="whatsapp">${ic('chat')} Hablar por WhatsApp</button>
+              <a class="btn btn--outline" href="${waLink()}" target="_blank" rel="noopener">${ic('chat')} Hablar por WhatsApp</a>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section dark">
-      <div class="container">
-        <div class="section__head"><div><span class="eyebrow">Clientes</span><h2>Lo que dicen de nosotros</h2></div></div>
-        <div class="testis">
-          ${TESTIMONIOS.map((t) => `
-            <figure class="testi" style="margin:0">
-              <div class="stars">★★★★★</div>
-              <p>“${esc(t.texto)}”</p>
-              <footer><span class="avatar">${t.nombre[0]}</span><div><b>${esc(t.nombre)}</b><small>${t.ciudad} · ${esc(t.auto)}</small></div></footer>
-            </figure>`).join('')}
         </div>
       </div>
     </section>
@@ -268,214 +215,37 @@
     <section class="section">
       <div class="container">
         <div class="cta-band">
-          <div><h2>¿Encontraste un auto y no estás seguro?</h2><p>Agenda una inspección precompra hoy. Vamos donde esté el vehículo.</p></div>
-          <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar ahora</a>
+          <div><span class="eyebrow">Próximamente</span><h2>Marketplace de autos inspeccionados</h2><p>Muy pronto podrás comprar autos que ya pasaron por la inspección de Atlas, con su informe a la vista.</p></div>
+          <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar inspección</a>
         </div>
       </div>
     </section>`;
   }
 
-  const state = { tipo: '', marca: '', max: '', q: '', sort: 'recientes', trans: '' };
-
-  function viewAutos(params) {
-    Object.assign(state, { q: params.get('q') || '', marca: params.get('marca') || '', max: params.get('max') || '' });
-    const tipos = [...new Set(CARS.map((c) => c.tipo))];
-    const marcas = [...new Set(CARS.map((c) => c.marca))].sort();
+  function viewProximamente() {
     return `
     <section class="page-hero">
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / Vehículos</div>
-        <h1>Vehículos inspeccionados</h1>
-        <p>Todos los autos de este marketplace fueron revisados por Atlas Motors. Descarga el informe antes de decidir.</p>
+        <h1>Autos inspeccionados</h1>
+        <p>Estamos preparando el marketplace de Atlas Motors: autos que ya pasaron nuestra inspección, con fotos e informe a la vista. Muy pronto.</p>
       </div>
     </section>
-    <section class="section--tight">
-      <div class="container market">
-        <aside class="filters" id="filters">
-          <h3>Filtros <button type="button" data-action="clear">Limpiar</button></h3>
-          <div class="field"><label for="fq">Buscar</label><input class="input" id="fq" value="${esc(state.q)}" placeholder="Marca, modelo…"></div>
-          <div class="field"><label>Tipo</label><div class="chips" data-group="tipo">${['', ...tipos].map((t) => `<button type="button" class="chip ${state.tipo === t ? 'on' : ''}" data-v="${t}">${t || 'Todos'}</button>`).join('')}</div></div>
-          <div class="field"><label for="fm">Marca</label><select class="select" id="fm"><option value="">Todas</option>${marcas.map((m) => `<option ${state.marca === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
-          <div class="field"><label>Transmisión</label><div class="chips" data-group="trans">${['', 'Automática', 'Manual'].map((t) => `<button type="button" class="chip ${state.trans === t ? 'on' : ''}" data-v="${t}">${t || 'Todas'}</button>`).join('')}</div></div>
-          <div class="field"><label for="fp">Precio máximo</label><select class="select" id="fp"><option value="">Sin límite</option>${[10, 15, 20, 30, 45].map((m) => `<option value="${m}000000" ${state.max === m + '000000' ? 'selected' : ''}>${clp(m * 1e6)}</option>`).join('')}</select></div>
-        </aside>
-        <div>
-          <div class="toolbar">
-            <div style="display:flex;gap:10px;align-items:center">
-              <button class="btn btn--outline btn--sm filters-toggle" data-action="toggle-filters">${ic('filter')} Filtros</button>
-              <b id="resultCount"></b>
-            </div>
-            <select class="select" id="fs" aria-label="Ordenar">
-              <option value="recientes">Más recientes</option><option value="precio-asc">Menor precio</option><option value="precio-desc">Mayor precio</option><option value="score">Mejor puntaje</option><option value="km">Menos kilómetros</option>
-            </select>
-          </div>
-          <div class="grid grid--cars" id="results"></div>
-        </div>
-      </div>
-    </section>`;
-  }
-
-  function bindAutos() {
-    const render = () => {
-      const q = state.q.trim().toLowerCase();
-      let list = CARS.filter((c) =>
-        (!state.tipo || c.tipo === state.tipo) && (!state.marca || c.marca === state.marca) && (!state.trans || c.transmision === state.trans) &&
-        (!state.max || c.precio <= +state.max) &&
-        (!q || `${c.marca} ${c.modelo} ${c.version} ${c.tipo} ${c.anio}`.toLowerCase().includes(q)));
-      const s = { 'precio-asc': (a, b) => a.precio - b.precio, 'precio-desc': (a, b) => b.precio - a.precio, score: (a, b) => b.score - a.score, km: (a, b) => a.km - b.km, recientes: (a, b) => b.fechaInspeccion.localeCompare(a.fechaInspeccion) }[state.sort];
-      list = list.sort(s);
-      $('#resultCount').textContent = `${list.length} vehículo${list.length === 1 ? '' : 's'}`;
-      $('#results').innerHTML = list.length ? list.map(carCard).join('') : `<div class="empty" style="grid-column:1/-1"><p><b>No encontramos vehículos con esos filtros.</b></p><p>¿Quieres que lo busquemos por ti?</p><a class="btn btn--gold" href="#/busqueda">Búsqueda personalizada</a></div>`;
-    };
-    $('#fq').addEventListener('input', (e) => { state.q = e.target.value; render(); });
-    $('#fm').addEventListener('change', (e) => { state.marca = e.target.value; render(); });
-    $('#fp').addEventListener('change', (e) => { state.max = e.target.value; render(); });
-    $('#fs').addEventListener('change', (e) => { state.sort = e.target.value; render(); });
-    $('#fs').value = state.sort;
-    $$('.chips[data-group]').forEach((g) => g.addEventListener('click', (e) => {
-      const b = e.target.closest('.chip'); if (!b) return;
-      state[g.dataset.group] = b.dataset.v;
-      $$('.chip', g).forEach((x) => x.classList.toggle('on', x === b)); render();
-    }));
-    app.addEventListener('click', (e) => {
-      const a = e.target.closest('[data-action]'); if (!a) return;
-      if (a.dataset.action === 'clear') { Object.assign(state, { tipo: '', marca: '', max: '', q: '', trans: '' }); route(); }
-      if (a.dataset.action === 'toggle-filters') $('#filters').classList.toggle('open');
-    });
-    render();
-  }
-
-  function viewAuto(id) {
-    const c = carById(id);
-    if (!c) return viewNotFound();
-    const cats = CHECKLIST.map((k, i) => ({ ...k, st: catStatus(c, i) }));
-    const related = CARS.filter((x) => x.id !== c.id && x.tipo === c.tipo).slice(0, 3);
-    return `
-    <section class="section--tight" style="padding-top:28px">
+    <section class="section">
       <div class="container">
-        <div class="crumbs" style="color:var(--muted);margin-bottom:18px"><a href="#/">Inicio</a> / <a href="#/autos">Vehículos</a> / ${esc(title(c))}</div>
-        <div class="detail">
+        <div class="callout">
+          <span class="ic">${ic('target')}</span>
           <div>
-            <div class="gallery" id="gallery">
-              <div class="gallery__tabs">
-                <button class="tab on" data-tab="fotos">${ic('camera')} Fotos (${c.fotos.length})</button>
-                <button class="tab" data-tab="video">${ic('play')} Video inspección</button>
-              </div>
-              <div id="galleryStage"></div>
-              <div class="gallery__thumbs">
-                ${c.fotos.map((f, i) => `<button class="${i === 0 ? 'on' : ''}" data-i="${i}" aria-label="Foto ${i + 1}"><img src="${f}" alt="" loading="lazy"></button>`).join('')}
-                <button class="vid" data-tab="video" aria-label="Ver video">${ic('play')}</button>
-              </div>
-            </div>
-
-            <div class="panel" style="margin-top:20px">
-              <h3>Resultado de la inspección</h3>
-              <p style="color:var(--muted)">${esc(c.resumen)}</p>
-              <ul class="obs-list">
-                ${c.observaciones.map((o) => `<li><span class="dot dot--${o.nivel}">${o.nivel === 'ok' ? '✓' : '!'}</span><span>${esc(o.texto)}</span></li>`).join('')}
-              </ul>
-            </div>
-
-            <div class="panel">
-              <h3>Checklist por categoría</h3>
-              <div class="cat-grid">
-                ${cats.map((k) => `<div class="cat">${ic(k.icon)} ${k.cat}<em class="${statusCls[k.st]}">${statusLabel[k.st]}</em></div>`).join('')}
-              </div>
-              <a class="btn btn--outline btn--block" style="margin-top:16px" href="#/informe/${c.id}">${ic('doc')} Ver checklist completo</a>
+            <h3>¿Buscas auto ahora?</h3>
+            <p>Mientras tanto, podemos buscarlo por ti o inspeccionar el que ya encontraste.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+              <a class="btn btn--gold" href="#/busqueda">${ic('target')} Búsqueda personalizada</a>
+              <a class="btn btn--outline" href="#/agendar">${ic('calendar')} Agendar inspección</a>
             </div>
           </div>
-
-          <aside>
-            <div class="panel">
-              <span class="pill">${ic('shield')} Inspeccionado por Atlas Motors</span>
-              <h1>${esc(c.marca)} ${esc(c.modelo)} ${c.anio}</h1>
-              <div class="ver">${esc(c.version)}</div>
-              <div class="price">${clp(c.precio)}</div>
-              <small style="color:var(--muted)">Publicado por ${c.vendedor.toLowerCase()} · ${c.comuna}</small>
-              <div class="specs">
-                <div class="spec">${ic('gauge')}<div><small>Kilometraje</small><b>${km(c.km)}</b></div></div>
-                <div class="spec">${ic('calendar')}<div><small>Año</small><b>${c.anio}</b></div></div>
-                <div class="spec">${ic('gear')}<div><small>Transmisión</small><b>${c.transmision}</b></div></div>
-                <div class="spec">${ic('fuel')}<div><small>Combustible</small><b>${c.combustible}</b></div></div>
-                <div class="spec">${ic('car')}<div><small>Tipo</small><b>${c.tipo} · ${c.traccion}</b></div></div>
-                <div class="spec">${ic('sparkle')}<div><small>Color</small><b>${c.color}</b></div></div>
-              </div>
-              <div class="verified">
-                <div class="ring" style="--v:${c.score}"><div>${c.score}<small>de 100</small></div></div>
-                <div><h3>Informe de inspección</h3><p>Realizado el ${fecha(c.fechaInspeccion)} · Checklist en 8 etapas, escáner y fotos.</p></div>
-                <a class="btn btn--gold" href="#/informe/${c.id}">${ic('download')} Descargar informe</a>
-              </div>
-              <div class="contact-actions">
-                <button class="btn btn--green btn--block" data-action="whatsapp">${ic('chat')} Contactar vendedor</button>
-                <button class="btn btn--outline btn--block" data-action="favorito">${ic('star')} Guardar en favoritos</button>
-              </div>
-            </div>
-          </aside>
         </div>
-
-        ${related.length ? `
-        <div class="section__head" style="margin-top:56px"><div><span class="eyebrow">También te puede interesar</span><h2>Otros ${c.tipo === 'SUV' ? 'SUV' : c.tipo.toLowerCase() + 's'} inspeccionados</h2></div></div>
-        <div class="grid grid--cars">${related.map(carCard).join('')}</div>` : ''}
       </div>
     </section>`;
-  }
-
-  function bindAuto(id) {
-    const c = carById(id); if (!c) return;
-    let idx = 0, mode = 'fotos';
-    const stage = $('#galleryStage');
-    const draw = () => {
-      $$('.gallery__tabs .tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === mode));
-      $$('.gallery__thumbs button[data-i]').forEach((b) => b.classList.toggle('on', mode === 'fotos' && +b.dataset.i === idx));
-      if (mode === 'fotos') {
-        stage.innerHTML = `<div class="gallery__main" data-action="zoom"><img src="${c.fotos[idx]}" alt="${esc(title(c))}, foto ${idx + 1}">
-          <button class="gallery__nav gallery__nav--prev" data-nav="-1" aria-label="Anterior">${ic('left')}</button>
-          <button class="gallery__nav gallery__nav--next" data-nav="1" aria-label="Siguiente">${ic('right')}</button></div>`;
-      } else {
-        const f = [...c.fotos, ...c.fotos].slice(0, 4);
-        const caps = ['Revisión exterior', 'Escáner OBD', 'Prueba en ruta', 'Bajo carrocería'];
-        stage.innerHTML = `<div class="video" id="video">${f.map((x) => `<img src="${x}" alt="">`).join('')}
-          <span class="video__caption"><i class="rec"></i> <span id="vcap">Video de inspección · ${esc(title(c))}</span></span>
-          <button class="video__play" data-action="play" aria-label="Reproducir video"><span>${ic('play')}</span></button>
-          <div class="video__hud">${ic('play')}<div class="video__bar"><i></i></div><span>0:16</span></div></div>`;
-        stage._caps = caps;
-      }
-    };
-    $('#gallery').addEventListener('click', (e) => {
-      const t = e.target.closest('[data-tab]'); if (t) { mode = t.dataset.tab; draw(); return; }
-      const th = e.target.closest('[data-i]'); if (th) { mode = 'fotos'; idx = +th.dataset.i; draw(); return; }
-      const n = e.target.closest('[data-nav]'); if (n) { e.stopPropagation(); idx = (idx + +n.dataset.nav + c.fotos.length) % c.fotos.length; draw(); return; }
-      const p = e.target.closest('[data-action="play"]');
-      if (p) {
-        const v = $('#video'); v.classList.add('playing'); p.remove();
-        let k = 0; const cap = $('#vcap'); clearInterval(bindAuto._t);
-        bindAuto._t = setInterval(() => { if (!document.body.contains(cap)) return clearInterval(bindAuto._t); cap.textContent = stage._caps[k++ % 4]; }, 4000);
-        cap.textContent = stage._caps[k++];
-        return;
-      }
-      if (e.target.closest('[data-action="zoom"]')) openLightbox(c.fotos, idx);
-    });
-    draw();
-  }
-
-  function openLightbox(fotos, i) {
-    const lb = $('#lightbox');
-    const draw = () => {
-      lb.innerHTML = `<button class="close" aria-label="Cerrar">${ic('x')}</button>
-        <button class="gallery__nav gallery__nav--prev" data-n="-1" aria-label="Anterior">${ic('left')}</button>
-        <img src="${fotos[i]}" alt="Foto ${i + 1} de ${fotos.length}">
-        <button class="gallery__nav gallery__nav--next" data-n="1" aria-label="Siguiente">${ic('right')}</button>`;
-    };
-    lb.onclick = (e) => {
-      const n = e.target.closest('[data-n]');
-      if (n) { i = (i + +n.dataset.n + fotos.length) % fotos.length; draw(); return; }
-      if (e.target === lb || e.target.closest('.close')) close();
-    };
-    const key = (e) => { if (e.key === 'Escape') close(); if (e.key === 'ArrowRight') { i = (i + 1) % fotos.length; draw(); } if (e.key === 'ArrowLeft') { i = (i - 1 + fotos.length) % fotos.length; draw(); } };
-    const close = () => { lb.classList.remove('open'); document.removeEventListener('keydown', key); document.body.style.overflow = ''; };
-    document.addEventListener('keydown', key);
-    document.body.style.overflow = 'hidden';
-    draw(); lb.classList.add('open');
   }
 
   function viewInforme(id) {
@@ -494,13 +264,13 @@
     <div class="report-wrap">
       <div class="container">
         <div class="report-actions">
-          <a class="btn btn--outline btn--sm" href="#/auto/${c.id}">${ic('left')} Volver al vehículo</a>
-          <button class="btn btn--gold" data-action="print">${ic('download')} Descargar PDF</button>
+          <a class="btn btn--outline btn--sm" href="#/inspeccion">${ic('left')} Volver</a>
+          <a class="btn btn--gold" href="#/agendar">${ic('calendar')} Agendar mi inspección</a>
         </div>
         <article class="report">
           <header class="report__head">
             <img src="assets/img/logo-wordmark.jpg" alt="Atlas Motors">
-            <div class="meta"><b>INFORME DE INSPECCIÓN PRECOMPRA</b>Folio ${folio}<br>Fecha: ${fecha(c.fechaInspeccion)} · ${c.comuna}</div>
+            <div class="meta"><b>INFORME DE INSPECCIÓN PRECOMPRA · EJEMPLO</b>Folio ${folio}<br>Fecha: ${fecha(c.fechaInspeccion)} · ${c.comuna}</div>
           </header>
           <div class="report__body">
             <section class="report__top">
@@ -528,7 +298,7 @@
                 <tr><td>Combustible</td><td>${c.combustible}</td></tr>
                 <tr><td>Transmisión</td><td>${c.transmision} · ${c.traccion}</td></tr>
                 <tr><td>Color</td><td>${c.color}</td></tr>
-                <tr><td>Inspector</td><td>Matías · Atlas Motors</td></tr>
+                <tr><td>Inspector</td><td>Atlas Motors</td></tr>
               </tbody></table>
             </div>
 
@@ -560,8 +330,8 @@
             </div>
 
             <div class="sign">
-              <div><img src="assets/img/logo-shield.jpg" alt=""><br>Este informe refleja el estado del vehículo a la fecha de inspección.<br>Verificable en atlasmotors.cl con folio ${folio}.</div>
-              <div class="line">Matías — Inspector Atlas Motors</div>
+              <div><img src="assets/img/logo-shield.jpg" alt=""><br>Informe de ejemplo: así se ve el que recibes después de tu inspección.</div>
+              <div class="line">Inspector Atlas Motors</div>
             </div>
           </div>
         </article>
@@ -598,10 +368,10 @@
 
     <section class="section--tight">
       <div class="container stats">
-        <div class="stat"><b>+480</b><span>clientes atendidos</span></div>
         <div class="stat"><b>8</b><span>etapas de revisión</span></div>
+        <div class="stat"><b>${clp(completa.precio)}</b><span>inspección completa</span></div>
         <div class="stat"><b>${clp(completa.precio * ABONO)}</b><span>abono para reservar</span></div>
-        <div class="stat"><b>4,9 ★</b><span>calificación de clientes</span></div>
+        <div class="stat"><b>2</b><span>modalidades: presencial o remota</span></div>
       </div>
     </section>
 
@@ -644,16 +414,16 @@
 
     <section class="section">
       <div class="container">
-        <div class="section__head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Valores</span><h2>Elige tu inspección</h2><p style="margin-inline:auto">Reservas tu hora con el ${ABONO * 100} % de abono y pagas el resto el día de la inspección. Traslado sin costo en La Serena y Coquimbo.</p></div></div>
-        <div class="plans">
+        <div class="section__head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Valores</span><h2>Inspección completa</h2><p style="margin-inline:auto">Reservas tu hora con el ${ABONO * 100} % de abono por transferencia y pagas el resto el día de la inspección.</p></div></div>
+        <div class="plans" style="grid-template-columns:minmax(0,1fr);max-width:480px;margin-inline:auto">
           ${PLANES.map((p) => `
             <div class="plan ${p.destacado ? 'featured' : ''}">
-              ${p.destacado ? '<span class="tag">MÁS ELEGIDA</span>' : ''}
+              
               <h3>${p.nombre}</h3>
               <div class="amount">${clp(p.precio)} <small>CLP</small></div>
               <p>${p.desc} Reserva con ${clp(p.precio * ABONO)}.</p>
               <ul>${p.incluye.map((i) => `<li>${ic('check')} ${i}</li>`).join('')}</ul>
-              <a class="btn ${p.destacado ? 'btn--gold' : 'btn--green'} btn--block" href="#/agendar?plan=${p.id}">Agendar ${p.nombre}</a>
+              <a class="btn ${p.destacado ? 'btn--gold' : 'btn--green'} btn--block" href="#/agendar">${ic('calendar')} Agendar inspección</a>
             </div>`).join('')}
         </div>
       </div>
@@ -662,31 +432,46 @@
     <section class="section--tight" style="padding-bottom:88px">
       <div class="container">
         <div class="cta-band">
-          <div><h2>Agenda en 2 minutos</h2><p>Elige día y hora, deja la dirección del auto y reserva con el ${ABONO * 100} % de abono.</p></div>
+          <div><h2>Agenda en 2 minutos</h2><p>Elige día y hora, cuéntanos del auto y te confirmamos por WhatsApp.</p></div>
           <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar aquí</a>
         </div>
       </div>
     </section>`;
   }
 
-  /* -------- Agenda -------- */
-  const booking = { step: 0, plan: 'completa', date: null, time: null, data: { presente: 'si' }, pay: 'transferencia', month: null };
-  const LEJOS = ['Ovalle', 'Vicuña', 'Andacollo', 'Illapel'];
-  const totalReserva = (p) => p.precio + (LEJOS.includes(booking.data.comuna) ? 10000 : 0);
-  const abonoReserva = (p) => Math.round(totalReserva(p) * ABONO);
-  const STEPS = ['Servicio', 'Fecha y hora', 'Tus datos', 'Pago'];
+  /* -------- Agenda: arma la solicitud y la envía por WhatsApp -------- */
+  const booking = { step: 0, date: null, time: null, data: { presente: 'si', donde: 'Particular' }, month: null, sent: false };
+  const COMUNAS = ['La Serena', 'Coquimbo', 'Ovalle', 'Otra comuna'];
+  const STEPS = ['Fecha y hora', 'Vehículo y datos', 'Enviar'];
   const SLOTS = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00', '18:30'];
-  const takenSlots = (d) => { const n = d.getDate(); return SLOTS.filter((_, i) => (n * 3 + i * 5) % 7 < 2); };
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const diaLargo = (isoDate) => new Date(isoDate + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  function viewAgendar(params) {
-    if (params.get('plan')) { booking.plan = params.get('plan'); booking.step = Math.max(booking.step, 0); }
+  const mensajeReserva = () => {
+    const d = booking.data;
+    return [
+      'Hola Atlas Motors, quiero agendar una inspección precompra.',
+      '',
+      `Vehículo: ${d.vehiculo}`,
+      `Vendedor: ${d.donde}`,
+      `Día y hora: ${diaLargo(booking.date)}, ${booking.time}`,
+      `Lugar: ${[d.direccion, d.comuna].filter(Boolean).join(', ')}`,
+      `Modalidad: ${d.presente === 'no' ? 'remota (no estaré presente)' : 'presencial'}`,
+      d.link ? `Publicación: ${d.link}` : '',
+      d.nota ? `Comentarios: ${d.nota}` : '',
+      '',
+      `Nombre: ${d.nombre}`,
+      `Teléfono: ${d.telefono}`,
+    ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n').trim();
+  };
+
+  function viewAgendar() {
     return `
     <section class="page-hero" style="padding:44px 0 50px">
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / <a href="#/inspeccion">Inspección precompra</a> / Agendar</div>
         <h1>Agenda tu inspección</h1>
-        <p>Elige el servicio, el día y la hora, y reserva con el 50 % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
+        <p>Elige el día y la hora, cuéntanos del auto y te confirmamos por WhatsApp. Reservas con el ${ABONO * 100} % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
       </div>
     </section>
     <section class="section--tight" style="padding-bottom:88px">
@@ -698,17 +483,11 @@
     const root = $('#booking');
     const today = new Date(); today.setHours(0, 0, 0, 0);
     if (!booking.month) booking.month = new Date(today.getFullYear(), today.getMonth(), 1);
-    const plan = () => PLANES.find((p) => p.id === booking.plan) || PLANES[1];
-    const canNext = () => [true, booking.date && booking.time, ['nombre', 'telefono', 'email', 'direccion', 'comuna'].every((k) => (booking.data[k] || '').trim()), true][booking.step];
+    const plan = PLANES[0];
+    const canNext = () => [booking.date && booking.time, ['nombre', 'telefono', 'vehiculo', 'comuna'].every((k) => (booking.data[k] || '').trim()), true][booking.step];
 
     const stepBody = () => {
-      if (booking.step === 0) return `
-        <h3>¿Qué inspección necesitas?</h3>
-        <div class="plan-pick">${PLANES.map((p) => `
-          <button type="button" class="plan-opt ${booking.plan === p.id ? 'on' : ''}" data-plan="${p.id}">
-            <span class="radio"></span><span><b>${p.nombre}${p.destacado ? ' · <span style="color:var(--gold-700)">Más elegida</span>' : ''}</b><small>${p.desc}</small></span><span class="amt">${clp(p.precio)}</span>
-          </button>`).join('')}</div>`;
-      if (booking.step === 1) {
+      if (booking.step === 0) {
         const m = booking.month; const first = (m.getDay() + 6) % 7; const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
         const label = m.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
         const max = new Date(today); max.setDate(max.getDate() + 60);
@@ -719,69 +498,63 @@
           const dis = dt < today || dt.getDay() === 0 || dt > max;
           cells += `<button type="button" data-date="${iso(dt)}" ${dis ? 'disabled' : ''} class="${booking.date === iso(dt) ? 'on' : ''} ${+dt === +today ? 'today' : ''}">${d}</button>`;
         }
-        const sel = booking.date ? new Date(booking.date + 'T12:00:00') : null;
-        const taken = sel ? takenSlots(sel) : [];
         return `
-          <h3>Elige día y hora</h3>
+          <h3>¿Qué día y a qué hora?</h3>
           <div class="cal">
             <div class="cal__head"><button type="button" data-month="-1" aria-label="Mes anterior">${ic('left')}</button><b>${label}</b><button type="button" data-month="1" aria-label="Mes siguiente">${ic('right')}</button></div>
             <div class="cal__grid">${cells}</div>
           </div>
-          ${sel ? `<p style="margin:18px 0 0;font-weight:600">Horarios disponibles para el ${sel.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-          <div class="slots">${SLOTS.map((s) => `<button type="button" class="slot ${booking.time === s ? 'on' : ''}" data-time="${s}" ${taken.includes(s) ? 'disabled' : ''}>${s}</button>`).join('')}</div>` : '<p style="margin:16px 0 0;color:var(--muted)">Selecciona un día para ver los horarios. Atendemos de lunes a sábado.</p>'}`;
+          ${booking.date ? `<p style="margin:18px 0 0;font-weight:600">Hora preferida para el ${diaLargo(booking.date)}</p>
+          <div class="slots">${SLOTS.map((s) => `<button type="button" class="slot ${booking.time === s ? 'on' : ''}" data-time="${s}">${s}</button>`).join('')}</div>
+          <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Te confirmamos la disponibilidad por WhatsApp.</p>` : '<p style="margin:16px 0 0;color:var(--muted)">Selecciona un día. Atendemos de lunes a sábado.</p>'}`;
       }
-      if (booking.step === 2) {
+      if (booking.step === 1) {
         const d = booking.data; const v = (k) => esc(d[k] || '');
         return `
-          <h3>Datos de la inspección</h3>
+          <h3>El vehículo y tus datos</h3>
           <div class="form-grid" id="dataForm">
-            <div class="field"><label for="b-nombre">Nombre completo *</label><input class="input" id="b-nombre" data-k="nombre" value="${v('nombre')}" autocomplete="name"></div>
-            <div class="field"><label for="b-tel">Teléfono *</label><input class="input" id="b-tel" data-k="telefono" value="${v('telefono')}" inputmode="tel" placeholder="+56 9 …" autocomplete="tel"></div>
-            <div class="field full"><label for="b-email">Correo electrónico *</label><input class="input" id="b-email" data-k="email" type="email" value="${v('email')}" autocomplete="email"><span class="hint">Aquí te llegará la confirmación y el informe.</span></div>
-            <div class="field full"><label for="b-dir">Dirección donde está el vehículo *</label><input class="input" id="b-dir" data-k="direccion" value="${v('direccion')}" placeholder="Ej: Av. del Mar 1234, estacionamiento"></div>
-            <div class="field"><label for="b-com">Comuna *</label><select class="select" id="b-com" data-k="comuna"><option value="">Selecciona</option>${['La Serena', 'Coquimbo', 'Ovalle', 'Vicuña', 'Andacollo', 'Illapel'].map((c) => `<option ${d.comuna === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-            <div class="field"><label for="b-veh">Vehículo a inspeccionar</label><input class="input" id="b-veh" data-k="vehiculo" value="${v('vehiculo')}" placeholder="Ej: Toyota Hilux 2021"></div>
-            <div class="field full"><label for="b-pres">¿Estarás presente en la inspección?</label><select class="select" id="b-pres" data-k="presente"><option value="si" ${d.presente !== 'no' ? 'selected' : ''}>Sí, voy a estar</option><option value="no" ${d.presente === 'no' ? 'selected' : ''}>No, prefiero la inspección remota (te enviamos todo en vivo)</option></select></div>
+            <div class="field full"><label for="b-veh">Vehículo a inspeccionar *</label><input class="input" id="b-veh" data-k="vehiculo" value="${v('vehiculo')}" placeholder="Marca, modelo y año. Ej: Toyota Hilux 2021"></div>
+            <div class="field"><label for="b-donde">¿Quién lo vende?</label><select class="select" id="b-donde" data-k="donde">${['Particular', 'Automotora'].map((o) => `<option ${d.donde === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
+            <div class="field"><label for="b-com">Comuna *</label><select class="select" id="b-com" data-k="comuna"><option value="">Selecciona</option>${COMUNAS.map((c) => `<option ${d.comuna === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+            <div class="field full"><label for="b-dir">Dirección donde está el auto</label><input class="input" id="b-dir" data-k="direccion" value="${v('direccion')}" placeholder="Si aún no la tienes, la coordinamos por WhatsApp"></div>
+            <div class="field full"><label for="b-pres">¿Estarás presente en la inspección?</label><select class="select" id="b-pres" data-k="presente"><option value="si" ${d.presente !== 'no' ? 'selected' : ''}>Sí, voy a estar</option><option value="no" ${d.presente === 'no' ? 'selected' : ''}>No, prefiero la inspección remota</option></select></div>
+            <div class="field"><label for="b-nombre">Tu nombre *</label><input class="input" id="b-nombre" data-k="nombre" value="${v('nombre')}" autocomplete="name"></div>
+            <div class="field"><label for="b-tel">Tu teléfono *</label><input class="input" id="b-tel" data-k="telefono" value="${v('telefono')}" inputmode="tel" placeholder="+56 9 …" autocomplete="tel"></div>
             <div class="field full"><label for="b-link">Link de la publicación (opcional)</label><input class="input" id="b-link" data-k="link" value="${v('link')}" placeholder="Yapo, Chileautos, Marketplace…"></div>
-            <div class="field full"><label for="b-nota">Comentarios para el inspector</label><textarea class="textarea" id="b-nota" data-k="nota" placeholder="Ej: el vendedor solo puede después de las 14:00">${v('nota')}</textarea></div>
+            <div class="field full"><label for="b-nota">Comentarios (opcional)</label><textarea class="textarea" id="b-nota" data-k="nota" placeholder="Ej: el vendedor solo puede después de las 14:00">${v('nota')}</textarea></div>
           </div>`;
       }
       return `
-        <h3>Reserva con el ${ABONO * 100} % de abono</h3>
-        <p style="color:var(--muted)">Pagas ${clp(abonoReserva(plan()))} ahora para dejar la hora reservada y el resto el día de la inspección. En esta demo no se realiza ningún cobro.</p>
-        <div class="pay-methods">
-          ${[['transferencia', 'Transferencia a cuenta empresa', 'Confirmamos tu reserva al recibirla', '#113221'], ['webpay', 'Webpay', 'Tarjetas de débito y crédito', '#c1121f'], ['mercadopago', 'Mercado Pago', 'Saldo, tarjetas o cuotas', '#009ee3']].map(([id, n, d, col]) => `
-            <button type="button" class="pay ${booking.pay === id ? 'on' : ''}" data-pay="${id}">
-              <span class="logo" style="background:${col}">${ic(id === 'transferencia' ? 'doc' : 'card')}</span>
-              <span><b>${n}</b><br><small style="color:var(--muted)">${d}</small></span>
-              <span class="radio" style="margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid ${booking.pay === id ? 'var(--gold)' : 'var(--line)'};display:grid;place-items:center">${booking.pay === id ? '<i style="width:11px;height:11px;border-radius:50%;background:var(--gold)"></i>' : ''}</span>
-            </button>`).join('')}
+        <h3>Envía tu solicitud</h3>
+        <p style="color:var(--muted)">Se abrirá WhatsApp con tu solicitud lista para enviar. Te confirmamos la hora y te mandamos los datos de la cuenta empresa para el abono.</p>
+        <div class="remote-steps" style="margin-top:16px">
+          <div class="remote-step"><span class="ic">${ic('chat')}</span><div><b>1. Envías el mensaje</b><p>Con el auto, el día y la hora que elegiste.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(plan.precio * ABONO)}</b><p>El ${ABONO * 100} % del servicio, para dejar la hora reservada.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>3. Inspeccionamos</b><p>El saldo de ${clp(plan.precio - plan.precio * ABONO)} se paga el día de la inspección.</p></div></div>
         </div>
-        <p style="font-size:13px;color:var(--muted);margin-top:14px">Al pagar aceptas los términos del servicio. Puedes reagendar sin costo hasta 12 horas antes.</p>`;
+        ${booking.sent ? `<p style="margin-top:16px;font-size:14px">¿No se abrió WhatsApp? <a href="${waLink(mensajeReserva())}" target="_blank" rel="noopener" style="color:var(--gold-700);font-weight:700">Toca aquí</a> o escríbenos al ${TEL}.</p>` : ''}`;
     };
 
     const summary = () => {
-      const p = plan(); const d = booking.date ? new Date(booking.date + 'T12:00:00') : null;
+      const d = booking.data;
       return `
         <aside class="panel summary">
           <h3>Resumen</h3>
           <dl>
-            <dt>Servicio</dt><dd>Inspección ${p.nombre}</dd>
-            <dt>Fecha</dt><dd>${d ? d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
+            <dt>Servicio</dt><dd>Inspección ${plan.nombre}</dd>
+            <dt>Día</dt><dd>${booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
             <dt>Hora</dt><dd>${booking.time || '—'}</dd>
-            <dt>Lugar</dt><dd>${esc(booking.data.direccion || '—')}${booking.data.comuna ? ', ' + esc(booking.data.comuna) : ''}</dd>
-            <dt>Modalidad</dt><dd>${booking.data.presente === 'no' ? 'Remota' : 'Presencial'}</dd>
-            <dt>Traslado</dt><dd>${LEJOS.includes(booking.data.comuna) ? clp(10000) : 'Gratis'}</dd>
-            <dt>Total del servicio</dt><dd>${clp(totalReserva(p))}</dd>
-            <dt>Saldo el día</dt><dd>${clp(totalReserva(p) - abonoReserva(p))}</dd>
+            <dt>Vehículo</dt><dd>${esc(d.vehiculo || '—')}</dd>
+            <dt>Lugar</dt><dd>${esc([d.direccion, d.comuna].filter(Boolean).join(', ') || '—')}</dd>
+            <dt>Modalidad</dt><dd>${d.presente === 'no' ? 'Remota' : 'Presencial'}</dd>
+            <dt>Valor</dt><dd>${clp(plan.precio)}</dd>
           </dl>
-          <div class="total"><span>Abono para reservar</span><span>${clp(abonoReserva(p))}</span></div>
-          <div style="display:flex;gap:10px;align-items:center;margin-top:16px;font-size:13px;color:var(--muted)">${ic('shield')} Reagenda gratis hasta 12 h antes</div>
+          <div class="total"><span>Abono para reservar</span><span>${clp(plan.precio * ABONO)}</span></div>
+          ${d.comuna === 'Otra comuna' ? '<p style="margin:14px 0 0;font-size:13px;color:var(--muted)">Para otras comunas te confirmamos disponibilidad y traslado por WhatsApp.</p>' : ''}
         </aside>`;
     };
 
     const draw = () => {
-      if (booking.step === 4) return drawSuccess();
       root.innerHTML = `
         <div class="booking">
           <div class="panel">
@@ -789,36 +562,17 @@
             ${stepBody()}
             <div class="wizard-nav">
               ${booking.step > 0 ? `<button type="button" class="btn btn--outline" data-go="-1">${ic('left')} Atrás</button>` : '<span></span>'}
-              <button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>${booking.step === 3 ? `${ic('card')} ${booking.pay === 'transferencia' ? 'Reservar y transferir' : 'Pagar abono'} ${clp(abonoReserva(plan()))}` : `Continuar ${ic('arrow')}`}</button>
+              ${booking.step === 2
+                ? `<a class="btn btn--gold" data-action="send-booking" href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">${ic('chat')} Enviar por WhatsApp</a>`
+                : `<button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>Continuar ${ic('arrow')}</button>`}
             </div>
           </div>
           ${summary()}
         </div>`;
     };
 
-    const drawSuccess = () => {
-      const p = plan(); const d = new Date(booking.date + 'T12:00:00');
-      const fecha = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
-      root.innerHTML = `
-        <div class="panel success">
-          <div class="check">${ic('check')}</div>
-          <h2 class="display" style="color:var(--green-950)">${booking.pay === 'transferencia' ? '¡Hora reservada!' : '¡Inspección agendada!'}</h2>
-          <p style="color:var(--muted);max-width:520px;margin:0 auto">${booking.pay === 'transferencia' ? `Te enviamos los datos de la cuenta empresa por correo y WhatsApp. Tu hora queda confirmada al recibir el abono de ${clp(abonoReserva(p))}.` : `Abono de ${clp(abonoReserva(p))} recibido.`} ${booking.data.presente === 'no' ? 'Inspeccionaremos el vehículo el' : 'Nos vemos el'} <b>${fecha} a las ${booking.time}</b> en ${esc(booking.data.direccion)}, ${esc(booking.data.comuna)}.</p>
-          <div class="notif-preview">
-            <div class="notif"><span class="ic">${ic('mail')}</span><div><b>Correo enviado a ${esc(booking.data.email)}</b>Confirmación de inspección ${p.nombre} · ${booking.pay === 'transferencia' ? 'Datos para transferir' : 'Comprobante de abono'}</div></div>
-            <div class="notif"><span class="ic">${ic('bell')}</span><div><b>Notificación para Atlas Motors</b>Nueva inspección: ${fecha}, ${booking.time} · ${esc(booking.data.comuna)} · ${esc(booking.data.vehiculo || 'Vehículo por confirmar')}</div></div>
-            <div class="notif"><span class="ic">${ic('calendar')}</span><div><b>${booking.data.presente === 'no' ? 'Inspección remota' : 'Agregado al calendario'}</b>${booking.data.presente === 'no' ? 'Ese día te enviaremos cada hallazgo con foto por WhatsApp' : 'Te recordaremos 24 h antes por WhatsApp'}</div></div>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:28px">
-            <a class="btn btn--gold" href="#/">Volver al inicio</a>
-            <button class="btn btn--outline" data-action="reset-booking">Agendar otra</button>
-          </div>
-        </div>`;
-    };
-
     root.addEventListener('click', (e) => {
       const t = e.target;
-      const pl = t.closest('[data-plan]'); if (pl) { booking.plan = pl.dataset.plan; return draw(); }
       const mo = t.closest('[data-month]'); if (mo) {
         const n = new Date(booking.month.getFullYear(), booking.month.getMonth() + +mo.dataset.month, 1);
         if (n >= new Date(today.getFullYear(), today.getMonth(), 1) && n <= new Date(today.getFullYear(), today.getMonth() + 2, 1)) booking.month = n;
@@ -826,25 +580,20 @@
       }
       const dt = t.closest('[data-date]'); if (dt) { booking.date = dt.dataset.date; booking.time = null; return draw(); }
       const tm = t.closest('[data-time]'); if (tm) { booking.time = tm.dataset.time; return draw(); }
-      const py = t.closest('[data-pay]'); if (py) { booking.pay = py.dataset.pay; return draw(); }
+      if (t.closest('[data-action="send-booking"]')) { booking.sent = true; setTimeout(draw, 300); return; }
       const go = t.closest('[data-go]'); if (go) {
-        const dir = +go.dataset.go;
-        if (dir > 0 && booking.step === 3) {
-          go.innerHTML = booking.pay === 'transferencia' ? 'Reservando…' : 'Procesando pago…'; go.disabled = true;
-          return setTimeout(() => { booking.step = 4; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 1200);
-        }
-        booking.step = Math.max(0, booking.step + dir); draw();
+        booking.step = Math.min(2, Math.max(0, booking.step + +go.dataset.go)); draw();
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
       }
-      if (t.closest('[data-action="reset-booking"]')) { Object.assign(booking, { step: 0, date: null, time: null, data: { presente: 'si' } }); draw(); }
     });
-    root.addEventListener('input', (e) => {
+    const onField = (e) => {
       const k = e.target.dataset.k; if (!k) return;
       booking.data[k] = e.target.value;
       const btn = $('[data-go="1"]', root); if (btn) btn.disabled = !canNext();
       const s = $('.summary', root); if (s) s.outerHTML = summary();
-    });
+    };
+    root.addEventListener('input', onField);
+    root.addEventListener('change', onField);
     draw();
   }
 
@@ -882,7 +631,7 @@
         <div>
           <span class="eyebrow">Solicitud</span>
           <h2 class="display" style="font-size:clamp(28px,3.6vw,42px);color:#fff;margin-top:10px">Envíanos lo que buscas</h2>
-          <p style="color:#c7cfc9">Te contactaremos en menos de 24 horas hábiles para entender bien lo que necesitas.</p>
+          <p style="color:#c7cfc9">Te contactamos para entender bien lo que necesitas.</p>
           <div class="mascot__img" style="max-width:320px;margin-top:20px;border-radius:24px"><img src="assets/img/mascota.jpg" alt="Mascota de Atlas Motors" loading="lazy"></div>
         </div>
         <form class="panel" id="searchForm" novalidate>
@@ -902,8 +651,8 @@
             <div class="field full"><label>Transmisión</label><div class="chips" data-group="trans">${['Indiferente', 'Automática', 'Manual'].map((t, i) => `<button type="button" class="chip ${i === 0 ? 'on' : ''}">${t}</button>`).join('')}</div></div>
             <div class="field full"><label for="s-nota">¿Algo más que debamos saber?</label><textarea class="textarea" id="s-nota" name="nota" placeholder="Ej: necesito 4x4, uso en faena, color preferido…"></textarea></div>
           </div>
-          <button class="btn btn--gold btn--lg btn--block" style="margin-top:18px" type="submit">${ic('target')} Enviar solicitud de búsqueda</button>
-          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0;text-align:center">Sin costo ni compromiso.</p>
+          <button class="btn btn--gold btn--lg btn--block" style="margin-top:18px" type="submit">${ic('chat')} Enviar por WhatsApp</button>
+          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0;text-align:center">Se abre WhatsApp con tu solicitud. Sin costo ni compromiso.</p>
         </form>
       </div>
     </section>`;
@@ -919,17 +668,28 @@
       const missing = ['nombre', 'telefono', 'marca', 'modelo'].filter((k) => !(fd[k] || '').trim());
       $$('.input, .select', f).forEach((el) => el.style.borderColor = missing.includes(el.name) ? 'var(--bad)' : '');
       if (missing.length) return toast('Completa los campos obligatorios (*)');
-      const nombre = esc(fd.nombre.split(' ')[0]);
+      const trans = $('.chips[data-group="trans"] .chip.on', f)?.textContent || 'Indiferente';
+      const msg = [
+        'Hola Atlas Motors, quiero una búsqueda personalizada.',
+        '',
+        `Busco: ${fd.marca} ${fd.modelo}, años ${fd.desde} a ${fd.hasta}`,
+        `Presupuesto máximo: ${clp(+fd.presupuesto)}`,
+        `Transmisión: ${trans}`,
+        fd.nota ? `Comentarios: ${fd.nota}` : '',
+        '',
+        `Nombre: ${fd.nombre}`,
+        `Teléfono: ${fd.telefono}`,
+        fd.email ? `Correo: ${fd.email}` : '',
+      ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n').trim();
+      const link = waLink(msg);
+      window.open(link, '_blank', 'noopener');
+      const nombre = esc(fd.nombre.trim().split(' ')[0]);
       f.innerHTML = `
         <div class="success" style="padding:20px 6px">
           <div class="check">${ic('check')}</div>
-          <h2 class="display" style="color:var(--green-950)">¡Solicitud recibida, ${nombre}!</h2>
-          <p style="color:var(--muted)">Te llamaremos dentro de las próximas 24 horas hábiles.</p>
-          <div class="call-script">
-            <b>Así sonará nuestra llamada:</b><br><br>
-            “Hola ${nombre}, ¿cómo estás? Soy Matías de Atlas Motors. Recibí tu solicitud de búsqueda personalizada: vi que andas buscando un <b>${esc(fd.marca)} ${esc(fd.modelo)}</b> entre ${esc(fd.desde)} y ${esc(fd.hasta)}, con un presupuesto de <b>${clp(+fd.presupuesto)}</b>. Voy a hacer un estudio de mercado y vemos juntos las mejores opciones.”
-          </div>
-          <a class="btn btn--green" style="margin-top:20px" href="#/autos">Ver autos inspeccionados</a>
+          <h2 class="display" style="color:var(--green-950)">¡Gracias, ${nombre}!</h2>
+          <p style="color:var(--muted)">Abrimos WhatsApp con tu solicitud. Envía el mensaje y te contactamos para partir la búsqueda.</p>
+          <a class="btn btn--gold" style="margin-top:12px" href="${link}" target="_blank" rel="noopener">${ic('chat')} Abrir WhatsApp de nuevo</a>
         </div>`;
       f.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
@@ -949,8 +709,7 @@
           <div class="opts">
             <a href="#/agendar">${ic('calendar')} Quiero agendar una inspección</a>
             <a href="#/busqueda">${ic('target')} Búsquenme un auto</a>
-            <a href="#/autos">${ic('car')} Ver autos inspeccionados</a>
-            <button data-action="whatsapp">${ic('chat')} Hablar por WhatsApp</button>
+            <a href="${waLink()}" target="_blank" rel="noopener">${ic('chat')} Hablar por WhatsApp</a>
           </div>
         </div>` : (sessionStorageSafe('hint') ? '' : '<div class="helper__hint">¿Te ayudo? 🦅</div>')}
         <button class="helper__btn" aria-label="${open ? 'Cerrar ayuda' : 'Abrir ayuda'}" aria-expanded="${open}"><img src="assets/img/mascota.jpg" alt=""></button>`;
@@ -970,17 +729,15 @@
   /* ---------------- router ---------------- */
   function route() {
     const raw = location.hash.replace(/^#/, '') || '/';
-    const [path, qs] = raw.split('?');
-    const params = new URLSearchParams(qs || '');
+    const [path] = raw.split('?');
     const parts = path.split('/').filter(Boolean);
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
-      case undefined: html = viewHome(); bind = bindHome; break;
-      case 'autos': html = viewAutos(params); bind = bindAutos; break;
-      case 'auto': html = viewAuto(parts[1]); bind = () => bindAuto(parts[1]); nav = 'autos'; break;
-      case 'informe': html = viewInforme(parts[1]); nav = 'autos'; break;
+      case undefined: html = viewHome(); break;
+      case 'autos': case 'auto': html = viewProximamente(); nav = 'autos'; break;
+      case 'informe': html = viewInforme(parts[1] || CARS[0].id); nav = 'inspeccion'; break;
       case 'inspeccion': html = viewInspeccion(); break;
-      case 'agendar': html = viewAgendar(params); bind = bindAgendar; break;
+      case 'agendar': html = viewAgendar(); bind = bindAgendar; break;
       case 'busqueda': html = viewBusqueda(); bind = bindBusqueda; break;
       default: html = viewNotFound();
     }
@@ -990,25 +747,8 @@
     $('#nav').classList.remove('open'); $('#menuBtn').setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
     bind && bind();
-    document.title = ({ home: 'Atlas Motors · Vehículos inspeccionados en la Región de Coquimbo', autos: 'Vehículos inspeccionados · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors' })[nav] || 'Atlas Motors';
+    document.title = ({ home: 'Atlas Motors · Inspección precompra de vehículos en la Región de Coquimbo', autos: 'Autos inspeccionados · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors' })[nav] || 'Atlas Motors';
   }
-
-  function bindHome() {
-    $('#homeSearch').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const p = new URLSearchParams(Object.entries(Object.fromEntries(new FormData(e.target))).filter(([, v]) => v));
-      location.hash = '#/autos' + (p.toString() ? '?' + p : '');
-    });
-  }
-
-  /* acciones globales */
-  document.addEventListener('click', (e) => {
-    const a = e.target.closest('[data-action]'); if (!a) return;
-    const act = a.dataset.action;
-    if (act === 'whatsapp') toast('Demo: aquí se abrirá WhatsApp con Atlas Motors');
-    if (act === 'favorito') { a.innerHTML = `${ic('star')} Guardado en favoritos`; toast('Vehículo guardado en favoritos'); }
-    if (act === 'print') window.print();
-  });
 
   // menú móvil
   const menuBtn = $('#menuBtn');
