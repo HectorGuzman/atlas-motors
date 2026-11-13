@@ -643,3 +643,15 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .report .alcance ul { margin: 0; padding-left: 18px; color: #3c4540; display: grid; gap: 4px; }
 @media print { .report .alcance { break-inside: avoid; } }
 .hero__visual .float-chip--b { bottom: -22px; }
+
+/* ---------- Instagram ---------- */
+.ig-band { display: flex; align-items: center; gap: 18px; padding: 22px 24px; border-radius: var(--radius); color: #fff; text-decoration: none;
+  background: linear-gradient(120deg, var(--green-950), var(--green-800)); border: 1px solid rgba(212,166,42,.35); box-shadow: var(--shadow); }
+.ig-band__icon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; flex: none;
+  background: radial-gradient(circle at 30% 110%, #fdf497 0%, #fd5949 45%, #d6249f 60%, #285aeb 90%); }
+.ig-band__icon .icon { width: 28px; height: 28px; color: #fff; }
+.ig-band__text { flex: 1; min-width: 0; }
+.ig-band__text > b { display: block; font-size: 18px; color: var(--gold-300); }
+.ig-band__text > span { color: #c7cfc9; font-size: 14.5px; }
+.ig-band .btn { flex: none; }
+@media (max-width: 640px) { .ig-band { flex-wrap: wrap; } .ig-band .btn { width: 100%; justify-content: center; } }

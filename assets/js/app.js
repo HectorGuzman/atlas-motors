@@ -17,6 +17,7 @@
   /* Contacto: WhatsApp Business de Atlas Motors */
   const WA = '56935595554';
   const TEL = '+56 9 3559 5554';
+  const IG = 'https://www.instagram.com/atlas.motors.cl/';
   const waLink = (msg) => `https://wa.me/${WA}${msg ? '?text=' + encodeURIComponent(msg) : ''}`;
 
   const ICONS = {
@@ -58,6 +59,7 @@
     video: '<rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/>',
     glasses: '<circle cx="6.5" cy="14" r="3.5"/><circle cx="17.5" cy="14" r="3.5"/><path d="M10 14h4M3 14 4.5 7h2M21 14l-1.5-7h-2"/>',
     mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+    instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/>',
     sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
   };
   const ic = (name, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -206,9 +208,20 @@
               <a class="btn btn--green" href="#/agendar">${ic('calendar')} Agendar inspección</a>
               <a class="btn btn--outline" href="#/busqueda">${ic('target')} Búscame un auto</a>
               <a class="btn btn--outline" href="${waLink()}" target="_blank" rel="noopener">${ic('chat')} Hablar por WhatsApp</a>
+              <a class="btn btn--outline" href="${IG}" target="_blank" rel="noopener">${ic('instagram')} Ver Instagram</a>
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="section--tight">
+      <div class="container">
+        <a class="ig-band" href="${IG}" target="_blank" rel="noopener">
+          <span class="ig-band__icon">${ic('instagram')}</span>
+          <span class="ig-band__text"><b>Síguenos en Instagram</b><span>Inspecciones reales, hallazgos y consejos para comprar seguro. Mira nuestras historias en <b>@atlas.motors.cl</b></span></span>
+          <span class="btn btn--gold">${ic('instagram')} Seguir</span>
+        </a>
       </div>
     </section>
 
@@ -710,6 +723,7 @@
             <a href="#/agendar">${ic('calendar')} Quiero agendar una inspección</a>
             <a href="#/busqueda">${ic('target')} Búsquenme un auto</a>
             <a href="${waLink()}" target="_blank" rel="noopener">${ic('chat')} Hablar por WhatsApp</a>
+            <a href="${IG}" target="_blank" rel="noopener">${ic('instagram')} Ver nuestro Instagram</a>
           </div>
         </div>` : (sessionStorageSafe('hint') ? '' : '<div class="helper__hint">¿Te ayudo? 🦅</div>')}
         <button class="helper__btn" aria-label="${open ? 'Cerrar ayuda' : 'Abrir ayuda'}" aria-expanded="${open}"><img src="assets/img/mascota.jpg" alt=""></button>`;
