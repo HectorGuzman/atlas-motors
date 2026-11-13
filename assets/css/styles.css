@@ -545,6 +545,11 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
   .trust, .stats, .includes { grid-template-columns: repeat(2, 1fr); }
   .steps { grid-template-columns: repeat(2, 1fr); }
   .detail, .booking { grid-template-columns: minmax(0, 1fr); }
+  /* En pantallas angostas: fotos → título y precio → resultado de la inspección */
+  .detail { gap: 20px; }
+  .detail > div { display: contents; }
+  .detail > aside { order: 1; }
+  .detail > div > .panel { order: 2; margin-top: 0 !important; }
   .summary { position: static; }
   .footer__grid { grid-template-columns: 1fr 1fr; }
   .mascot { grid-template-columns: 300px 1fr; }
@@ -625,3 +630,15 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
+
+/* ---------- Inspección remota y alcance ---------- */
+.remote-steps { display: grid; gap: 14px; }
+.remote-step { display: flex; gap: 16px; align-items: start; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.remote-step .ic { width: 48px; height: 48px; border-radius: 14px; background: var(--green-900); color: var(--gold-300); display: grid; place-items: center; flex: none; }
+.remote-step .ic .icon { width: 24px; height: 24px; }
+.remote-step b { display: block; color: var(--green-950); margin-bottom: 2px; }
+.remote-step p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.report .alcance { border: 1px solid var(--gold); border-radius: 6px; padding: 14px 16px; font-size: 13px; }
+.report .alcance p { margin: 0 0 8px; color: var(--green-900); }
+.report .alcance ul { margin: 0; padding-left: 18px; color: #3c4540; display: grid; gap: 4px; }
+@media print { .report .alcance { break-inside: avoid; } }

@@ -144,22 +144,25 @@
     },
   ];
 
-  /* Plantilla del checklist de inspección (resumen de 150 puntos) */
+  /* Checklist en el orden en que Matías recorre el vehículo (igual que la app de inspecciones) */
   const CHECKLIST = [
-    { cat: 'Carrocería y pintura', icon: 'car', items: ['Medición de espesor de pintura (12 piezas)', 'Alineación de paneles y luces', 'Golpes, abolladuras y rayones', 'Corrosión y óxido', 'Parabrisas y vidrios', 'Ópticas y focos'] },
-    { cat: 'Estructura y chasis', icon: 'shield', items: ['Largueros y travesaños', 'Pilares A/B/C', 'Puntos de soldadura de fábrica', 'Piso y maleta', 'Evidencia de choque estructural'] },
-    { cat: 'Motor', icon: 'engine', items: ['Fugas de aceite y refrigerante', 'Estado de correas', 'Ruidos anormales en frío y caliente', 'Humo de escape', 'Soportes de motor', 'Nivel y estado de fluidos'] },
-    { cat: 'Escáner electrónico', icon: 'scan', items: ['Códigos de falla activos', 'Códigos históricos', 'Módulos ABS / Airbag', 'Kilometraje en módulos vs. tablero', 'Salud de batería y alternador'] },
-    { cat: 'Transmisión y tracción', icon: 'gear', items: ['Cambios de marcha', 'Embrague / convertidor', 'Tracción 4x4 / reductora', 'Homocinéticas y cardán'] },
-    { cat: 'Suspensión, dirección y frenos', icon: 'disc', items: ['Amortiguadores', 'Bujes y rótulas', 'Juego de dirección', 'Discos y pastillas', 'Neumáticos y aros'] },
-    { cat: 'Interior y equipamiento', icon: 'seat', items: ['Tablero y testigos', 'Aire acondicionado / climatizador', 'Alzavidrios y cierre centralizado', 'Multimedia y cámaras', 'Tapicería y olores'] },
-    { cat: 'Documentación', icon: 'doc', items: ['Padrón y permiso de circulación', 'Revisión técnica vigente', 'Certificado de anotaciones (prendas)', 'Multas impagas', 'Historial de mantenciones'] },
+    { cat: 'Carrocería y pintura', icon: 'car', items: ['Inspección visual 360°', 'Espesor de pintura pieza por pieza', 'Alineación de paneles', 'Óxido', 'Parabrisas y vidrios', 'Ópticas y focos'] },
+    { cat: 'Estructura y chasis', icon: 'shield', items: ['Bisagras, pernos y sellos de puertas, capó y maletero', 'Largueros, pilares y piso', 'Chasis: soldaduras y choques'] },
+    { cat: 'Motor', icon: 'engine', items: ['Refrigerante: medición, nivel y depósito', 'Correas', 'Fugas en motor', 'Cableado', 'Líquido de frenos e hidráulico', 'Nivel de aceite y tapa de aceite', 'Señales de sobrecalentamiento'] },
+    { cat: 'Parte baja y suspensión', icon: 'disc', items: ['Fugas por debajo', 'Palieres', 'Bandejas y bujes', 'Fuelles', 'Cremallera de dirección', 'Amortiguadores delanteros y traseros', 'Neumáticos'] },
+    { cat: 'Interior y electricidad', icon: 'seat', items: ['Cinturones y asientos', 'Alzavidrios, espejos y cierre', 'Radio y comandos al volante', 'Parasoles y techo', 'Aire acondicionado', 'Luces e intermitentes', 'Testigos del tablero'] },
+    { cat: 'Escáner', icon: 'scan', items: ['Códigos de falla en todos los módulos', 'Kilometraje real', 'Parámetros en vivo', 'Caja automática: temperatura y nivel', 'Batería y carga'] },
+    { cat: 'Prueba de ruta', icon: 'gauge', items: ['Ruidos de motor', 'Respuesta del motor', 'Embrague y cambios', 'Tren delantero y trasero', 'Frenado y dirección', 'Tracción 4x4 (si aplica)'] },
+    { cat: 'Documentos', icon: 'doc', items: ['Permiso de circulación', 'Revisión técnica', 'Seguro obligatorio (SOAP)', 'Historial de mantenciones'] },
   ];
 
+  /* Precios: la Completa es el valor que cobra hoy Matías ($50.000, abono de 50 % para reservar).
+     Esencial y Premium son de ejemplo hasta confirmarlos. */
+  const ABONO = 0.5;
   const PLANES = [
-    { id: 'esencial', nombre: 'Esencial', precio: 39990, desc: 'Para autos de ciudad y hatchbacks.', incluye: ['Checklist de 90 puntos', 'Escáner OBD completo', 'Medición de pintura', 'Informe digital en 24 h'] },
-    { id: 'completa', nombre: 'Completa', precio: 59990, desc: 'La más pedida. SUV, sedán y camionetas.', destacado: true, incluye: ['Checklist de 150 puntos', 'Escáner OBD + módulos', 'Medición de pintura y estructura', 'Prueba en ruta', 'Revisión de documentos', 'Informe con fotos y video'] },
-    { id: 'premium', nombre: 'Premium 4x4', precio: 79990, desc: 'Camionetas 4x4, alta gama y vehículos de trabajo.', incluye: ['Todo lo de Completa', 'Revisión de tracción 4x4 y reductora', 'Inspección bajo carrocería en elevador', 'Asesoría de precio y negociación', 'Acompañamiento a la compra'] },
+    { id: 'esencial', nombre: 'Esencial', precio: 39990, desc: 'Para autos de ciudad y hatchbacks.', incluye: ['Carrocería, pintura y estructura', 'Escáner completo', 'Revisión de motor y parte baja', 'Informe PDF con fotos'] },
+    { id: 'completa', nombre: 'Completa', precio: 50000, desc: 'La más pedida. SUV, sedán y camionetas.', destacado: true, incluye: ['Recorrido completo en 8 etapas', 'Medición de pintura pieza por pieza', 'Escáner con parámetros en vivo', 'Prueba de ruta', 'Costo estimado de las reparaciones', 'Informe PDF con fotos', 'Disponible en modalidad remota'] },
+    { id: 'premium', nombre: 'Premium 4x4', precio: 79990, desc: 'Camionetas 4x4, diésel, alta gama y vehículos de trabajo.', incluye: ['Todo lo de Completa', 'Revisión de tracción 4x4 y reductora', 'Especialista en motores diésel', 'Asesoría para negociar el precio', 'Acompañamiento a la compra'] },
   ];
 
   const TESTIMONIOS = [
@@ -168,5 +171,5 @@
     { nombre: 'Francisca M.', ciudad: 'Ovalle', texto: 'El informe es súper claro, con fotos y video. Fui a negociar con el vendedor con datos en la mano.', auto: 'Hatchback 2020' },
   ];
 
-  window.ATLAS = { CARS, CHECKLIST, PLANES, TESTIMONIOS };
+  window.ATLAS = { CARS, CHECKLIST, PLANES, TESTIMONIOS, ABONO };
 })();

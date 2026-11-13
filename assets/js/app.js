@@ -1,6 +1,6 @@
 /* Atlas Motors — mockup SPA (sin dependencias, router por hash) */
 (function () {
-  const { CARS, CHECKLIST, PLANES, TESTIMONIOS } = window.ATLAS;
+  const { CARS, CHECKLIST, PLANES, TESTIMONIOS, ABONO } = window.ATLAS;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   let app = $('#app'); // se reemplaza en cada ruta para soltar listeners viejos
@@ -50,6 +50,9 @@
     filter: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
     card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
     print: '<path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7"/>',
+    video: '<rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/>',
+    glasses: '<circle cx="6.5" cy="14" r="3.5"/><circle cx="17.5" cy="14" r="3.5"/><path d="M10 14h4M3 14 4.5 7h2M21 14l-1.5-7h-2"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
     sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
   };
   const ic = (name, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -61,9 +64,8 @@
 
   const catStatus = (car, i) => {
     // Deriva un estado por categoría desde las observaciones del auto (demo)
-    const map = { 0: 'Carrocería', 1: 'Estructura', 2: 'Motor', 3: 'Escáner', 4: 'Transmisión', 5: 'Suspensión', 6: 'Interior', 7: 'Documentación' };
     const fails = car.observaciones.filter((o) => o.nivel !== 'ok');
-    const keyword = [/pintura|rayón|parachoques|repintad|golpe|pisadera|plumillas/i, /estructural/i, /motor|turbo|fuga/i, /escáner|batería|códigos/i, /embrague|caja|tracción/i, /neumático|pastilla|freno|amortiguador|suspensión/i, /tapiz|filtro de habitáculo|interior/i, /document|mantenci/i][i];
+    const keyword = [/pintura|rayón|parachoques|repintad|golpe|pisadera|plumillas/i, /estructural/i, /motor|turbo|fuga/i, /neumático|amortiguador|suspensión|bujes/i, /tapiz|filtro de habitáculo|interior/i, /escáner|batería|códigos/i, /embrague|caja|tracción|pastilla|freno/i, /document|mantenci/i][i];
     const hit = fails.find((o) => keyword.test(o.texto));
     return hit ? hit.nivel : 'ok';
   };
@@ -151,7 +153,7 @@
           </div>
           <div class="hero__stats">
             <div><b>+480</b><span>inspecciones realizadas</span></div>
-            <div><b>150</b><span>puntos revisados</span></div>
+            <div><b>8</b><span>etapas de revisión</span></div>
             <div><b>24 h</b><span>entrega del informe</span></div>
           </div>
         </div>
@@ -164,7 +166,7 @@
             </div>
           </a>
           <div class="float-chip float-chip--a"><span class="ic">${ic('shield')}</span><div><b>Inspección aprobada</b>Sin choques estructurales</div></div>
-          <div class="float-chip float-chip--b"><span class="ic">${ic('doc')}</span><div><b>Informe PDF</b>Checklist de 150 puntos</div></div>
+          <div class="float-chip float-chip--b"><span class="ic">${ic('doc')}</span><div><b>Informe PDF</b>Checklist en 8 etapas</div></div>
         </div>
       </div>
     </section>
@@ -205,7 +207,7 @@
             <span class="bg-icon">${ic('scan')}</span>
             <span class="pill" style="align-self:start;margin-bottom:auto">Desde ${clp(PLANES[0].precio)}</span>
             <h3>Inspección precompra</h3>
-            <p>Vamos a donde está el auto con escáner, medidor de pintura y checklist de 150 puntos. Informe digital en 24 horas.</p>
+            <p>Vamos a donde está el auto con escáner y medidor de pintura. ¿No puedes ir? Te mandamos cada hallazgo con foto en tiempo real y el informe en PDF.</p>
             <span class="link">Ver servicio y agendar ${ic('arrow')}</span>
           </a>
           <a class="service-card" href="#/busqueda">
@@ -224,8 +226,8 @@
         <div class="section__head"><div><span class="eyebrow">Así funciona</span><h2>Comprar seguro en 4 pasos</h2></div></div>
         <div class="steps">
           <div class="step"><h4>Elige o encuentra</h4><p>Explora el marketplace o pídenos que busquemos el auto ideal para ti.</p></div>
-          <div class="step"><h4>Agenda online</h4><p>Elige día, hora y dirección. Paga en línea en segundos.</p></div>
-          <div class="step"><h4>Inspeccionamos</h4><p>150 puntos: carrocería, motor, escáner, suspensión y documentos.</p></div>
+          <div class="step"><h4>Agenda online</h4><p>Elige día, hora y dirección. Reserva con el 50 % de abono.</p></div>
+          <div class="step"><h4>Inspeccionamos</h4><p>8 etapas: carrocería, estructura, motor, parte baja, interior, escáner y prueba de ruta.</p></div>
           <div class="step"><h4>Decide con datos</h4><p>Recibe el informe con fotos y video. Compra o negocia con respaldo.</p></div>
         </div>
       </div>
@@ -379,7 +381,7 @@
               <div class="cat-grid">
                 ${cats.map((k) => `<div class="cat">${ic(k.icon)} ${k.cat}<em class="${statusCls[k.st]}">${statusLabel[k.st]}</em></div>`).join('')}
               </div>
-              <a class="btn btn--outline btn--block" style="margin-top:16px" href="#/informe/${c.id}">${ic('doc')} Ver checklist completo (150 puntos)</a>
+              <a class="btn btn--outline btn--block" style="margin-top:16px" href="#/informe/${c.id}">${ic('doc')} Ver checklist completo</a>
             </div>
           </div>
 
@@ -400,7 +402,7 @@
               </div>
               <div class="verified">
                 <div class="ring" style="--v:${c.score}"><div>${c.score}<small>de 100</small></div></div>
-                <div><h3>Informe de inspección</h3><p>Realizado el ${fecha(c.fechaInspeccion)} · Checklist 150 puntos, escáner y fotos.</p></div>
+                <div><h3>Informe de inspección</h3><p>Realizado el ${fecha(c.fechaInspeccion)} · Checklist en 8 etapas, escáner y fotos.</p></div>
                 <a class="btn btn--gold" href="#/informe/${c.id}">${ic('download')} Descargar informe</a>
               </div>
               <div class="contact-actions">
@@ -535,16 +537,27 @@
             <ul class="obs-list">${c.observaciones.map((o) => `<li><span class="dot dot--${o.nivel}">${o.nivel === 'ok' ? '✓' : '!'}</span><span>${esc(o.texto)}</span></li>`).join('')}</ul>
 
             <h2>Checklist de inspección</h2>
-            ${cats.map((k) => `
+            ${cats.map((k, n) => `
               <section style="margin-bottom:16px">
                 <table>
-                  <thead><tr><th>${k.cat}</th><th style="width:170px;text-align:right">Estado</th></tr></thead>
+                  <thead><tr><th>${n + 1}. ${k.cat}</th><th style="width:170px;text-align:right">Estado</th></tr></thead>
                   <tbody>${k.items.map((it, j) => { const s = rowStatus(k, j); return `<tr><td>${it}</td><td style="text-align:right"><span class="status status--${s}">${statusLabel[s]}</span></td></tr>`; }).join('')}</tbody>
                 </table>
               </section>`).join('')}
 
             <h2>Registro fotográfico</h2>
             <div class="photos">${c.fotos.map((f) => `<img src="${f}" alt="">`).join('')}</div>
+
+            <h2>Alcance de la inspección</h2>
+            <div class="alcance">
+              <p><b>${c.observaciones.some((o) => o.nivel === 'fail') ? 'Durante la inspección se detectaron las fallas indicadas en este informe.' : 'Durante todo el tiempo que duró la inspección, el vehículo no presentó fallas graves.'}</b></p>
+              <ul>
+                <li>Este informe refleja el estado del vehículo solo en la fecha, hora y lugar de la inspección.</li>
+                <li>Una inspección precompra no es un diagnóstico mecánico: es una revisión visual, electrónica y en ruta que busca reducir el riesgo de una mala compra o de una estafa.</li>
+                <li>Atlas Motors no se responsabiliza por fallas que aparezcan después de la inspección, ya que dependen del uso, la conducción, el estado de los caminos y la mantención del vehículo.</li>
+                <li>Los costos de reparación indicados son referenciales.</li>
+              </ul>
+            </div>
 
             <div class="sign">
               <div><img src="assets/img/logo-shield.jpg" alt=""><br>Este informe refleja el estado del vehículo a la fecha de inspección.<br>Verificable en atlasmotors.cl con folio ${folio}.</div>
@@ -557,12 +570,13 @@
   }
 
   function viewInspeccion() {
+    const completa = PLANES.find((p) => p.destacado) || PLANES[0];
     return `
     <section class="page-hero">
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / Servicios / Inspección precompra</div>
         <h1>Inspección precompra</h1>
-        <p>Antes de pagar, deja que el ojo de águila revise el auto. Vamos a donde esté el vehículo, en toda la Región de Coquimbo.</p>
+        <p>Antes de pagar, deja que el ojo de águila revise el auto. Vamos a donde esté el vehículo, en toda la Región de Coquimbo. Y si no puedes estar presente, te lo mostramos en vivo.</p>
       </div>
     </section>
 
@@ -572,8 +586,8 @@
         <div>
           <span class="eyebrow">¿Qué es?</span>
           <h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:var(--green-950);margin-top:10px">Una revisión profesional antes de que pongas tu plata</h2>
-          <p>La inspección precompra es una evaluación técnica completa del vehículo que quieres comprar. Conectamos el <b>escáner</b> para leer todos los módulos electrónicos, medimos el <b>espesor de la pintura</b> pieza por pieza, revisamos estructura, motor, suspensión y documentos.</p>
-          <p>En menos de 24 horas recibes un <b>informe digital con fotos, video y checklist de 150 puntos</b> para decidir con datos y negociar el precio con respaldo.</p>
+          <p>Revisamos el vehículo en el mismo orden, siempre: carrocería 360° con <b>medidor de pintura</b>, estructura y chasis, motor, parte baja, interior, <b>escáner</b> y <b>prueba de ruta</b>. Multimarca, bencineros, diésel y alta gama.</p>
+          <p>Te decimos el estado real del auto. Si tiene detalles menores, te damos <b>una idea de cuánto cuesta repararlos</b> para que negocies el precio con respaldo. Si tiene fallas graves, te lo decimos claro: no te lo recomendamos.</p>
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px">
             <a class="btn btn--gold btn--lg" href="#/agendar">${ic('calendar')} Agendar inspección</a>
             <a class="btn btn--outline btn--lg" href="#/informe/${CARS[0].id}">${ic('doc')} Ver informe de ejemplo</a>
@@ -585,31 +599,59 @@
     <section class="section--tight">
       <div class="container stats">
         <div class="stat"><b>+480</b><span>clientes atendidos</span></div>
-        <div class="stat"><b>1 de 3</b><span>autos con problemas ocultos</span></div>
-        <div class="stat"><b>$1,2 M</b><span>ahorro promedio negociado</span></div>
+        <div class="stat"><b>8</b><span>etapas de revisión</span></div>
+        <div class="stat"><b>${clp(completa.precio * ABONO)}</b><span>abono para reservar</span></div>
         <div class="stat"><b>4,9 ★</b><span>calificación de clientes</span></div>
       </div>
     </section>
 
     <section class="section dark">
       <div class="container">
-        <div class="section__head"><div><span class="eyebrow">¿En qué consiste?</span><h2>150 puntos revisados</h2><p>Esto es lo que revisamos en cada inspección.</p></div></div>
+        <div class="section__head"><div><span class="eyebrow">Nuestro recorrido</span><h2>Así revisamos tu próximo auto</h2><p>Las mismas 8 etapas en cada inspección, en este orden.</p></div></div>
         <div class="includes">
-          ${CHECKLIST.map((k) => `<div class="include"><span class="ic">${ic(k.icon)}</span><h4>${k.cat}</h4><ul>${k.items.slice(0, 4).map((i) => `<li>${i}</li>`).join('')}</ul></div>`).join('')}
+          ${CHECKLIST.map((k, n) => `<div class="include"><span class="ic">${ic(k.icon)}</span><h4>${n + 1}. ${k.cat}</h4><ul>${k.items.slice(0, 4).map((i) => `<li>${i}</li>`).join('')}</ul></div>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container split" style="align-items:start">
+        <div>
+          <span class="eyebrow">Inspección remota</span>
+          <h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:var(--green-950);margin-top:10px">¿No puedes estar presente? Igual lo ves todo</h2>
+          <p>Muchos autos están en otra comuna o en una automotora en horario de oficina. Para eso inventamos la inspección remota.</p>
+        </div>
+        <div class="remote-steps">
+          <div class="remote-step"><span class="ic">${ic('glasses')}</span><div><b>Grabamos la inspección completa</b><p>Con lentes inteligentes: ves exactamente lo que ve el inspector.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('camera')}</span><div><b>Te mandamos cada hallazgo con foto</b><p>Por WhatsApp y en el momento: un choque, una fuga, una pieza repintada.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('mic')}</span><div><b>Te explicamos el estado real</b><p>Por llamada o audio: qué es grave, qué es un detalle y cuánto costaría repararlo.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('doc')}</span><div><b>Recibes el informe en PDF</b><p>Con fotos y checklist, para negociar con el vendedor o la automotora.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section--tight">
+      <div class="container">
+        <div class="callout">
+          <span class="ic">${ic('eye')}</span>
+          <div>
+            <h3>Una inspección precompra no es un diagnóstico</h3>
+            <p>La inspección busca que no te vendan un auto chocado, con fallas graves escondidas o con el kilometraje alterado. Un diagnóstico es otra cosa: requiere el auto varias horas en taller para, por ejemplo, analizar el fluido de la caja o medir la compresión. El informe refleja el estado del vehículo el día de la inspección; no cubre fallas que aparezcan después, que dependen del uso y la mantención.</p>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="section">
       <div class="container">
-        <div class="section__head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Valores</span><h2>Elige tu inspección</h2><p style="margin-inline:auto">Precios con IVA incluido. Traslado sin costo en La Serena y Coquimbo.</p></div></div>
+        <div class="section__head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Valores</span><h2>Elige tu inspección</h2><p style="margin-inline:auto">Reservas tu hora con el ${ABONO * 100} % de abono y pagas el resto el día de la inspección. Traslado sin costo en La Serena y Coquimbo.</p></div></div>
         <div class="plans">
           ${PLANES.map((p) => `
             <div class="plan ${p.destacado ? 'featured' : ''}">
               ${p.destacado ? '<span class="tag">MÁS ELEGIDA</span>' : ''}
               <h3>${p.nombre}</h3>
               <div class="amount">${clp(p.precio)} <small>CLP</small></div>
-              <p>${p.desc}</p>
+              <p>${p.desc} Reserva con ${clp(p.precio * ABONO)}.</p>
               <ul>${p.incluye.map((i) => `<li>${ic('check')} ${i}</li>`).join('')}</ul>
               <a class="btn ${p.destacado ? 'btn--gold' : 'btn--green'} btn--block" href="#/agendar?plan=${p.id}">Agendar ${p.nombre}</a>
             </div>`).join('')}
@@ -620,7 +662,7 @@
     <section class="section--tight" style="padding-bottom:88px">
       <div class="container">
         <div class="cta-band">
-          <div><h2>Agenda en 2 minutos</h2><p>Elige día y hora, deja la dirección del auto y paga en línea. Nosotros nos encargamos del resto.</p></div>
+          <div><h2>Agenda en 2 minutos</h2><p>Elige día y hora, deja la dirección del auto y reserva con el ${ABONO * 100} % de abono.</p></div>
           <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar aquí</a>
         </div>
       </div>
@@ -628,7 +670,10 @@
   }
 
   /* -------- Agenda -------- */
-  const booking = { step: 0, plan: 'completa', date: null, time: null, data: {}, pay: 'webpay', month: null };
+  const booking = { step: 0, plan: 'completa', date: null, time: null, data: { presente: 'si' }, pay: 'transferencia', month: null };
+  const LEJOS = ['Ovalle', 'Vicuña', 'Andacollo', 'Illapel'];
+  const totalReserva = (p) => p.precio + (LEJOS.includes(booking.data.comuna) ? 10000 : 0);
+  const abonoReserva = (p) => Math.round(totalReserva(p) * ABONO);
   const STEPS = ['Servicio', 'Fecha y hora', 'Tus datos', 'Pago'];
   const SLOTS = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00', '18:30'];
   const takenSlots = (d) => { const n = d.getDate(); return SLOTS.filter((_, i) => (n * 3 + i * 5) % 7 < 2); };
@@ -641,7 +686,7 @@
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / <a href="#/inspeccion">Inspección precompra</a> / Agendar</div>
         <h1>Agenda tu inspección</h1>
-        <p>Elige el servicio, el día y la hora. Paga en línea y te confirmamos al instante.</p>
+        <p>Elige el servicio, el día y la hora, y reserva con el 50 % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
       </div>
     </section>
     <section class="section--tight" style="padding-bottom:88px">
@@ -696,15 +741,16 @@
             <div class="field full"><label for="b-dir">Dirección donde está el vehículo *</label><input class="input" id="b-dir" data-k="direccion" value="${v('direccion')}" placeholder="Ej: Av. del Mar 1234, estacionamiento"></div>
             <div class="field"><label for="b-com">Comuna *</label><select class="select" id="b-com" data-k="comuna"><option value="">Selecciona</option>${['La Serena', 'Coquimbo', 'Ovalle', 'Vicuña', 'Andacollo', 'Illapel'].map((c) => `<option ${d.comuna === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
             <div class="field"><label for="b-veh">Vehículo a inspeccionar</label><input class="input" id="b-veh" data-k="vehiculo" value="${v('vehiculo')}" placeholder="Ej: Toyota Hilux 2021"></div>
+            <div class="field full"><label for="b-pres">¿Estarás presente en la inspección?</label><select class="select" id="b-pres" data-k="presente"><option value="si" ${d.presente !== 'no' ? 'selected' : ''}>Sí, voy a estar</option><option value="no" ${d.presente === 'no' ? 'selected' : ''}>No, prefiero la inspección remota (te enviamos todo en vivo)</option></select></div>
             <div class="field full"><label for="b-link">Link de la publicación (opcional)</label><input class="input" id="b-link" data-k="link" value="${v('link')}" placeholder="Yapo, Chileautos, Marketplace…"></div>
             <div class="field full"><label for="b-nota">Comentarios para el inspector</label><textarea class="textarea" id="b-nota" data-k="nota" placeholder="Ej: el vendedor solo puede después de las 14:00">${v('nota')}</textarea></div>
           </div>`;
       }
       return `
-        <h3>Pago en línea</h3>
-        <p style="color:var(--muted)">Elige tu medio de pago. En esta demo no se realiza ningún cobro.</p>
+        <h3>Reserva con el ${ABONO * 100} % de abono</h3>
+        <p style="color:var(--muted)">Pagas ${clp(abonoReserva(plan()))} ahora para dejar la hora reservada y el resto el día de la inspección. En esta demo no se realiza ningún cobro.</p>
         <div class="pay-methods">
-          ${[['webpay', 'Webpay', 'Tarjetas de débito y crédito', '#c1121f'], ['mercadopago', 'Mercado Pago', 'Saldo, tarjetas o cuotas', '#009ee3'], ['transferencia', 'Transferencia', 'Confirmación manual en 1 h', '#113221']].map(([id, n, d, col]) => `
+          ${[['transferencia', 'Transferencia a cuenta empresa', 'Confirmamos tu reserva al recibirla', '#113221'], ['webpay', 'Webpay', 'Tarjetas de débito y crédito', '#c1121f'], ['mercadopago', 'Mercado Pago', 'Saldo, tarjetas o cuotas', '#009ee3']].map(([id, n, d, col]) => `
             <button type="button" class="pay ${booking.pay === id ? 'on' : ''}" data-pay="${id}">
               <span class="logo" style="background:${col}">${ic(id === 'transferencia' ? 'doc' : 'card')}</span>
               <span><b>${n}</b><br><small style="color:var(--muted)">${d}</small></span>
@@ -724,10 +770,13 @@
             <dt>Fecha</dt><dd>${d ? d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
             <dt>Hora</dt><dd>${booking.time || '—'}</dd>
             <dt>Lugar</dt><dd>${esc(booking.data.direccion || '—')}${booking.data.comuna ? ', ' + esc(booking.data.comuna) : ''}</dd>
-            <dt>Traslado</dt><dd>${['Ovalle', 'Vicuña', 'Andacollo', 'Illapel'].includes(booking.data.comuna) ? clp(10000) : 'Gratis'}</dd>
+            <dt>Modalidad</dt><dd>${booking.data.presente === 'no' ? 'Remota' : 'Presencial'}</dd>
+            <dt>Traslado</dt><dd>${LEJOS.includes(booking.data.comuna) ? clp(10000) : 'Gratis'}</dd>
+            <dt>Total del servicio</dt><dd>${clp(totalReserva(p))}</dd>
+            <dt>Saldo el día</dt><dd>${clp(totalReserva(p) - abonoReserva(p))}</dd>
           </dl>
-          <div class="total"><span>Total</span><span>${clp(p.precio + (['Ovalle', 'Vicuña', 'Andacollo', 'Illapel'].includes(booking.data.comuna) ? 10000 : 0))}</span></div>
-          <div style="display:flex;gap:10px;align-items:center;margin-top:16px;font-size:13px;color:var(--muted)">${ic('shield')} Pago seguro · Reagenda gratis</div>
+          <div class="total"><span>Abono para reservar</span><span>${clp(abonoReserva(p))}</span></div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:16px;font-size:13px;color:var(--muted)">${ic('shield')} Reagenda gratis hasta 12 h antes</div>
         </aside>`;
     };
 
@@ -740,7 +789,7 @@
             ${stepBody()}
             <div class="wizard-nav">
               ${booking.step > 0 ? `<button type="button" class="btn btn--outline" data-go="-1">${ic('left')} Atrás</button>` : '<span></span>'}
-              <button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>${booking.step === 3 ? `${ic('card')} Pagar ${clp(plan().precio + (['Ovalle', 'Vicuña', 'Andacollo', 'Illapel'].includes(booking.data.comuna) ? 10000 : 0))}` : `Continuar ${ic('arrow')}`}</button>
+              <button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>${booking.step === 3 ? `${ic('card')} ${booking.pay === 'transferencia' ? 'Reservar y transferir' : 'Pagar abono'} ${clp(abonoReserva(plan()))}` : `Continuar ${ic('arrow')}`}</button>
             </div>
           </div>
           ${summary()}
@@ -753,12 +802,12 @@
       root.innerHTML = `
         <div class="panel success">
           <div class="check">${ic('check')}</div>
-          <h2 class="display" style="color:var(--green-950)">¡Inspección agendada!</h2>
-          <p style="color:var(--muted);max-width:520px;margin:0 auto">Pago recibido. Nos vemos el <b>${fecha} a las ${booking.time}</b> en ${esc(booking.data.direccion)}, ${esc(booking.data.comuna)}.</p>
+          <h2 class="display" style="color:var(--green-950)">${booking.pay === 'transferencia' ? '¡Hora reservada!' : '¡Inspección agendada!'}</h2>
+          <p style="color:var(--muted);max-width:520px;margin:0 auto">${booking.pay === 'transferencia' ? `Te enviamos los datos de la cuenta empresa por correo y WhatsApp. Tu hora queda confirmada al recibir el abono de ${clp(abonoReserva(p))}.` : `Abono de ${clp(abonoReserva(p))} recibido.`} ${booking.data.presente === 'no' ? 'Inspeccionaremos el vehículo el' : 'Nos vemos el'} <b>${fecha} a las ${booking.time}</b> en ${esc(booking.data.direccion)}, ${esc(booking.data.comuna)}.</p>
           <div class="notif-preview">
-            <div class="notif"><span class="ic">${ic('mail')}</span><div><b>Correo enviado a ${esc(booking.data.email)}</b>Confirmación de inspección ${p.nombre} · Comprobante de pago</div></div>
+            <div class="notif"><span class="ic">${ic('mail')}</span><div><b>Correo enviado a ${esc(booking.data.email)}</b>Confirmación de inspección ${p.nombre} · ${booking.pay === 'transferencia' ? 'Datos para transferir' : 'Comprobante de abono'}</div></div>
             <div class="notif"><span class="ic">${ic('bell')}</span><div><b>Notificación para Atlas Motors</b>Nueva inspección: ${fecha}, ${booking.time} · ${esc(booking.data.comuna)} · ${esc(booking.data.vehiculo || 'Vehículo por confirmar')}</div></div>
-            <div class="notif"><span class="ic">${ic('calendar')}</span><div><b>Agregado al calendario</b>Te recordaremos 24 h antes por WhatsApp</div></div>
+            <div class="notif"><span class="ic">${ic('calendar')}</span><div><b>${booking.data.presente === 'no' ? 'Inspección remota' : 'Agregado al calendario'}</b>${booking.data.presente === 'no' ? 'Ese día te enviaremos cada hallazgo con foto por WhatsApp' : 'Te recordaremos 24 h antes por WhatsApp'}</div></div>
           </div>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:28px">
             <a class="btn btn--gold" href="#/">Volver al inicio</a>
@@ -781,14 +830,14 @@
       const go = t.closest('[data-go]'); if (go) {
         const dir = +go.dataset.go;
         if (dir > 0 && booking.step === 3) {
-          go.innerHTML = 'Procesando pago…'; go.disabled = true;
+          go.innerHTML = booking.pay === 'transferencia' ? 'Reservando…' : 'Procesando pago…'; go.disabled = true;
           return setTimeout(() => { booking.step = 4; draw(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 1200);
         }
         booking.step = Math.max(0, booking.step + dir); draw();
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-      if (t.closest('[data-action="reset-booking"]')) { Object.assign(booking, { step: 0, date: null, time: null, data: {} }); draw(); }
+      if (t.closest('[data-action="reset-booking"]')) { Object.assign(booking, { step: 0, date: null, time: null, data: { presente: 'si' } }); draw(); }
     });
     root.addEventListener('input', (e) => {
       const k = e.target.dataset.k; if (!k) return;
