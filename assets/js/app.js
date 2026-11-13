@@ -122,6 +122,25 @@
       </g>
     </svg>`;
 
+  const FAQS = () => [
+    ['¿Cuánto cuesta la inspección?', `La inspección completa vale ${clp(PLANES[0].precio)}. Reservas tu hora con el ${ABONO * 100} % de abono (${clp(PLANES[0].precio * ABONO)}) por transferencia y pagas el resto el día de la inspección.`],
+    ['¿Tengo que estar presente?', 'No. Si no puedes ir, hacemos la inspección remota: grabamos todo, te mandamos cada hallazgo con foto por WhatsApp en el momento y después te explicamos el estado real del auto por llamada o audio.'],
+    ['¿La inspección es un diagnóstico?', 'No. La inspección precompra busca que no te vendan un auto chocado, con fallas graves escondidas o con el kilometraje alterado. Un diagnóstico requiere el auto varias horas en taller.'],
+    ['¿Qué recibo al final?', 'Un informe en PDF con el checklist de las 8 etapas, fotos de lo que encontramos y una idea de cuánto cuesta reparar cada detalle, para que negocies el precio con respaldo.'],
+    ['¿Revisan cualquier marca?', 'Sí. Revisamos autos, SUV y camionetas multimarca, a bencina y diésel, incluidos vehículos de alta gama.'],
+    ['¿A qué comunas van?', 'La Serena, Coquimbo y Ovalle. Para otras comunas de la región, escríbenos y lo coordinamos.'],
+  ];
+  const faq = () => `
+    <section class="section">
+      <div class="container faq-wrap">
+        <div><span class="eyebrow">Preguntas frecuentes</span><h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:var(--green-950);margin-top:10px">Lo que más nos preguntan</h2>
+          <p style="color:var(--muted)">¿Tienes otra duda? Escríbenos y te respondemos al tiro.</p>
+          <a class="btn btn--outline" href="${waLink('Hola Atlas Motors, tengo una consulta.')}" target="_blank" rel="noopener">${ic('chat')} Preguntar por WhatsApp</a>
+        </div>
+        <div class="faq">${FAQS().map(([q, a], i) => `<details ${i === 0 ? 'open' : ''}><summary>${q}<span class="faq__ic">${ic('right')}</span></summary><p>${a}</p></details>`).join('')}</div>
+      </div>
+    </section>`;
+
   /* ---------------- vistas ---------------- */
   function viewHome() {
     const completa = PLANES[0];
@@ -215,6 +234,8 @@
       </div>
     </section>
 
+    ${faq()}
+
     <section class="section--tight">
       <div class="container">
         <a class="ig-band" href="${IG}" target="_blank" rel="noopener">
@@ -282,7 +303,7 @@
         </div>
         <article class="report">
           <header class="report__head">
-            <img src="assets/img/logo-wordmark.jpg" alt="Atlas Motors">
+            <img src="assets/img/logo-wordmark.png" alt="Atlas Motors">
             <div class="meta"><b>INFORME DE INSPECCIÓN PRECOMPRA · EJEMPLO</b>Folio ${folio}<br>Fecha: ${fecha(c.fechaInspeccion)} · ${c.comuna}</div>
           </header>
           <div class="report__body">
@@ -343,7 +364,7 @@
             </div>
 
             <div class="sign">
-              <div><img src="assets/img/logo-shield.jpg" alt=""><br>Informe de ejemplo: así se ve el que recibes después de tu inspección.</div>
+              <div><img src="assets/img/logo-shield.png" alt=""><br>Informe de ejemplo: así se ve el que recibes después de tu inspección.</div>
               <div class="line">Inspector Atlas Motors</div>
             </div>
           </div>
@@ -441,6 +462,8 @@
         </div>
       </div>
     </section>
+
+    ${faq()}
 
     <section class="section--tight" style="padding-bottom:88px">
       <div class="container">
@@ -761,7 +784,20 @@
     $('#nav').classList.remove('open'); $('#menuBtn').setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
     bind && bind();
+    document.body.classList.toggle('on-agendar', nav === 'agendar');
+    reveal();
     document.title = ({ home: 'Atlas Motors · Inspección precompra de vehículos en la Región de Coquimbo', autos: 'Autos inspeccionados · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors' })[nav] || 'Atlas Motors';
+  }
+
+  /* Aparición suave de las secciones al hacer scroll */
+  let io;
+  function reveal() {
+    if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (io) io.disconnect();
+    io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { rootMargin: '0px 0px -8% 0px' });
+    $$('#app > section:not(:first-child)').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
   }
 
   // menú móvil
