@@ -58,6 +58,8 @@ String mensajeResumen(Inspection i) {
 /// Abre el menú de compartir del iPhone (WhatsApp, etc.).
 Future<void> compartir(BuildContext context, String texto, {List<String> fotos = const []}) async {
   final box = context.findRenderObject() as RenderBox?;
+  // Solo las fotos que están en este teléfono.
+  fotos = [for (final f in fotos) if (Store.I.photoFile(f).existsSync()) f];
   await SharePlus.instance.share(ShareParams(
     text: texto,
     // share_plus rechaza una lista vacía: sin fotos se manda solo el texto.

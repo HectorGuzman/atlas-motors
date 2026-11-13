@@ -205,7 +205,11 @@ class _ItemCardState extends State<_ItemCard> {
                 itemBuilder: (_, k) => Stack(children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.file(Store.I.photoFile(r.fotos[k]), width: 96, height: 72, fit: BoxFit.cover),
+                    child: Image.file(Store.I.photoFile(r.fotos[k]), width: 96, height: 72, fit: BoxFit.cover,
+                        // La foto puede no estar en este teléfono (se tomó en otro): por ahora solo viajan los datos.
+                        errorBuilder: (_, _, _) => Container(
+                            width: 96, height: 72, color: const Color(0xFFEFE8D6),
+                            child: const Icon(Icons.cloud_off_outlined, color: Color(0xFF8E9A92)))),
                   ),
                   Positioned(
                     right: 2,

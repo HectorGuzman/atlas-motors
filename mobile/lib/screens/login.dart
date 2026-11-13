@@ -13,15 +13,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
   bool _hide = true;
+  bool _busy = false;
   String? _error;
+  String? _info;
 
-  void _submit() {
+  Future<void> _submit() async {
     final email = _email.text.trim();
-    if (!email.contains('@') || _pass.text.length < 4) {
-      setState(() => _error = 'Ingresa tu correo y una clave de al menos 4 caracteres.');
+    if (!email.contains('@') || _pass.text.isEmpty) {
+      setState(() => _error = 'Ingresa tu correo y tu clave.');
       return;
     }
-    Store.I.login(email);
+    setState(() { _busy = true; _error = null; _info = null; });
+    final err = await Store.I.login(email, _pass.text);
+    if (mounted) setState(() { _busy = false; _error = err; });
+  }
+
+  Future<void> _olvide() async {
+    final email = _email.text.trim();
+    if (!email.contains('@')) {
+      setState(() { _error = 'Escribe tu correo arriba y vuelve a tocar "¿Olvidaste tu clave?".'; _info = null; });
+      return;
+    }
+    setState(() { _busy = true; _error = null; _info = null; });
+    final err = await Store.I.recuperarClave(email);
+    if (mounted) {
+      setState(() {
+        _busy = false;
+        _error = err;
+        _info = err == null ? 'Si el correo tiene cuenta, te llegará un mensaje para crear una clave nueva.' : null;
+      });
+    }
   }
 
   @override
@@ -86,11 +107,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   Text(_error!, style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 13.5)),
                 ],
+                if (_info != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_info!, style: const TextStyle(color: C.gold300, fontSize: 13.5)),
+                ],
                 const SizedBox(height: 26),
-                GoldButton('Ingresar', icon: Icons.login, onPressed: _submit),
-                const SizedBox(height: 28),
+                _busy
+                    ? const Center(child: SizedBox(height: 48, child: CircularProgressIndicator(color: C.gold)))
+                    : GoldButton('Ingresar', icon: Icons.login, onPressed: _submit),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _busy ? null : _olvide,
+                  child: const Text('¿Olvidaste tu clave?', style: TextStyle(color: Color(0xFFB9C2BB))),
+                ),
+                const SizedBox(height: 16),
                 const Text(
-                  'Versión de prueba: todavía no valida la clave\ny los datos se guardan solo en este teléfono.',
+                  'Acceso solo para el equipo de Atlas Motors.\nTus inspecciones se respaldan en la nube.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Color(0xFF8E9A92), fontSize: 12.5, height: 1.5),
                 ),

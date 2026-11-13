@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,6 +50,7 @@ class Inspection {
   int? recomendacion;
   int modalidad; // índice en [modalidades]
   Map<String, ItemResult> results;
+  DateTime actualizado; // último cambio, para decidir qué copia gana al sincronizar
 
   Inspection({
     required this.id,
@@ -65,7 +69,9 @@ class Inspection {
     this.recomendacion,
     this.modalidad = 0,
     Map<String, ItemResult>? results,
-  }) : results = results ?? {};
+    DateTime? actualizado,
+  })  : results = results ?? {},
+        actualizado = actualizado ?? fecha;
 
   String get vehiculo => [marca, modelo, anio].where((s) => s.isNotEmpty).join(' ');
   ItemResult result(String itemId) => results.putIfAbsent(itemId, () => ItemResult());
@@ -136,19 +142,34 @@ class Inspection {
         modalidad: j['modalidad'] ?? 0,
         results: (j['results'] as Map<String, dynamic>? ?? {})
             .map((k, v) => MapEntry(k, ItemResult.fromJson(Map<String, dynamic>.from(v)))),
+        actualizado: j['actualizado'] == null ? null : DateTime.parse(j['actualizado']),
       );
+
+  /// Copia local completa (incluye la fecha del último cambio).
+  Map<String, dynamic> toLocalJson() => {...toJson(), 'actualizado': actualizado.toIso8601String()};
 }
 
-/// Estado de la app. En esta versión todo se guarda en el teléfono;
-/// al conectar GCP esto pasa a Firebase Auth + Firestore + Cloud Storage.
+/// Estado de la app.
+/// - Login con Firebase Auth (correo y clave).
+/// - Las inspecciones se guardan en el teléfono (funciona sin señal) y se
+///   respaldan en Firestore, colección `inspecciones`. Al abrir la app o
+///   iniciar sesión se trae lo de la nube y gana la copia modificada más tarde.
+/// - Las fotos todavía quedan solo en el teléfono (falta Cloud Storage).
 class Store extends ChangeNotifier {
   Store._();
   static final Store I = Store._();
 
+  static const _ejemploId = 'ejemplo';
+
   late Directory _dir;
-  late SharedPreferences _prefs;
   List<Inspection> inspections = [];
   String? userEmail;
+
+  /// Lo último que se mandó a la nube por inspección, para subir solo lo que cambió.
+  final Map<String, String> _enNube = {};
+
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  CollectionReference<Map<String, dynamic>> get _col => FirebaseFirestore.instance.collection('inspecciones');
 
   String get userName {
     final n = (userEmail ?? '').split('@').first.replaceAll(RegExp(r'[._]'), ' ').trim();
@@ -162,32 +183,121 @@ class Store extends ChangeNotifier {
   Future<void> init() async {
     _dir = await getApplicationDocumentsDirectory();
     await Directory('${_dir.path}/fotos').create(recursive: true);
-    _prefs = await SharedPreferences.getInstance();
-    userEmail = _prefs.getString('email');
+    // Limpia la sesión falsa de la versión sin servidor.
+    (await SharedPreferences.getInstance()).remove('email');
     if (await _file.exists()) {
       final list = jsonDecode(await _file.readAsString()) as List;
       inspections = list.map((e) => Inspection.fromJson(Map<String, dynamic>.from(e))).toList();
     } else {
       inspections = [_ejemplo()];
-      await save();
+      await _writeLocal();
+    }
+    userEmail = _auth.currentUser?.email;
+    if (userEmail != null) unawaited(sync());
+  }
+
+  /// Inicia sesión. Devuelve un mensaje de error para mostrar, o null si entró.
+  Future<String?> login(String email, String clave) async {
+    try {
+      await _auth.signInWithEmailAndPassword(email: email.trim(), password: clave);
+    } on FirebaseAuthException catch (e) {
+      return switch (e.code) {
+        'invalid-email' => 'El correo no es válido.',
+        'user-disabled' => 'Esta cuenta está desactivada.',
+        'too-many-requests' => 'Demasiados intentos. Espera unos minutos y vuelve a intentar.',
+        'network-request-failed' => 'Sin conexión. Revisa tu señal e intenta de nuevo.',
+        _ => 'Correo o clave incorrectos.',
+      };
+    }
+    userEmail = _auth.currentUser?.email;
+    notifyListeners();
+    unawaited(sync());
+    return null;
+  }
+
+  /// Manda un correo para crear una clave nueva. Devuelve un error o null.
+  Future<String?> recuperarClave(String email) async {
+    try {
+      await _auth.setLanguageCode('es');
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.code == 'invalid-email' ? 'El correo no es válido.' : 'No pudimos enviar el correo. Intenta de nuevo.';
     }
   }
 
-  Future<void> login(String email) async {
-    userEmail = email.trim();
-    await _prefs.setString('email', userEmail!);
-    notifyListeners();
-  }
-
   Future<void> logout() async {
+    await _auth.signOut();
     userEmail = null;
-    await _prefs.remove('email');
     notifyListeners();
   }
 
+  Future<void> _writeLocal() =>
+      _file.writeAsString(jsonEncode(inspections.map((i) => i.toLocalJson()).toList()));
+
+  /// Guarda en el teléfono y sube a la nube lo que cambió.
+  /// Firestore deja los cambios en cola si no hay señal y los sube después.
   Future<void> save() async {
-    await _file.writeAsString(jsonEncode(inspections.map((i) => i.toJson()).toList()));
+    final now = DateTime.now();
+    for (final i in inspections) {
+      if (i.id == _ejemploId) continue;
+      final json = jsonEncode(i.toJson());
+      if (_enNube[i.id] == json) continue;
+      if (_enNube.containsKey(i.id)) i.actualizado = now;
+      _enNube[i.id] = json;
+      _subir(i);
+    }
+    await _writeLocal();
     notifyListeners();
+  }
+
+  void _subir(Inspection i) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+    _col.doc(i.id).set({
+      ...i.toJson(),
+      'actualizado': Timestamp.fromDate(i.actualizado),
+      'fecha': Timestamp.fromDate(i.fecha),
+      'editadoPor': uid,
+      'borrada': false,
+    }).catchError((Object e) => debugPrint('No se pudo subir ${i.folio}: $e'));
+  }
+
+  /// Trae las inspecciones de la nube y las junta con las del teléfono.
+  Future<void> sync() async {
+    if (_auth.currentUser == null) return;
+    try {
+      final snap = await _col.get();
+      final locales = {for (final i in inspections) i.id: i};
+      for (final d in snap.docs) {
+        final data = d.data();
+        final remota = Inspection.fromJson({
+          ...data,
+          'fecha': (data['fecha'] as Timestamp).toDate().toIso8601String(),
+          'actualizado': (data['actualizado'] as Timestamp).toDate().toIso8601String(),
+        });
+        final local = locales[d.id];
+        if (data['borrada'] == true) {
+          if (local != null && !local.actualizado.isAfter(remota.actualizado)) inspections.remove(local);
+          locales.remove(d.id);
+          continue;
+        }
+        if (local == null) {
+          inspections.add(remota);
+          _enNube[d.id] = jsonEncode(remota.toJson());
+        } else if (remota.actualizado.isAfter(local.actualizado)) {
+          inspections[inspections.indexOf(local)] = remota;
+          _enNube[d.id] = jsonEncode(remota.toJson());
+        } else {
+          _enNube[d.id] = jsonEncode(remota.toJson()); // si la local es distinta, save() la sube
+        }
+      }
+      inspections.sort((a, b) => b.fecha.compareTo(a.fecha));
+      // Lo que está solo en el teléfono (o es más nuevo) se sube.
+      await save();
+    } catch (e) {
+      debugPrint('Sincronización pendiente: $e');
+    }
   }
 
   String _id() => DateTime.now().microsecondsSinceEpoch.toRadixString(36) + Random().nextInt(1296).toRadixString(36);
@@ -209,7 +319,14 @@ class Store extends ChangeNotifier {
       }
     }
     inspections.remove(i);
-    await save();
+    _enNube.remove(i.id);
+    if (i.id != _ejemploId && _auth.currentUser != null) {
+      // Se marca como borrada (no se elimina) para que otros teléfonos también la quiten.
+      _col.doc(i.id).set({'borrada': true, 'actualizado': Timestamp.now(), 'editadoPor': _auth.currentUser!.uid},
+          SetOptions(merge: true)).catchError((Object e) => debugPrint('No se pudo borrar ${i.folio}: $e'));
+    }
+    await _writeLocal();
+    notifyListeners();
   }
 
   /// Copia una foto elegida a la carpeta de la app y devuelve su nombre.

@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('¿Cerrar sesión?'),
-        content: const Text('Tus inspecciones quedan guardadas en este teléfono.'),
+        content: const Text('Tus inspecciones quedan respaldadas en la nube. Las fotos quedan en este teléfono.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Cerrar sesión')),
@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text('Hola, ${store.userName}', style: display(24)),
           const SizedBox(height: 4),
-          Text(store.inspections.length == 1 ? '1 inspección en este teléfono' : '${store.inspections.length} inspecciones en este teléfono', style: const TextStyle(color: C.muted)),
+          Text(store.inspections.length == 1 ? '1 inspección' : '${store.inspections.length} inspecciones', style: const TextStyle(color: C.muted)),
           const SizedBox(height: 16),
           TextField(
             onChanged: (v) => setState(() => _q = v),

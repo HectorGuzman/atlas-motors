@@ -1,0 +1,32 @@
+rules_version = '2';
+// Todo cerrado salvo lo que se abre explícitamente abajo.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Equipo de Atlas: un documento por persona autorizada (id = uid de Auth).
+    // Solo se administra desde la consola o con credenciales de Google Cloud.
+    function esEquipo() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/equipo/$(request.auth.uid));
+    }
+
+    match /equipo/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Inspecciones: las lee y escribe solo el equipo. No se borran desde la
+    // app (se marcan con borrada = true) y quien escribe queda registrado.
+    match /inspecciones/{id} {
+      allow read: if esEquipo();
+      allow create, update: if esEquipo()
+        && request.resource.data.editadoPor == request.auth.uid
+        && request.resource.data.actualizado is timestamp;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
