@@ -128,7 +128,7 @@
     ['¿La inspección es un diagnóstico?', 'No. La inspección precompra busca que no te vendan un auto chocado, con fallas graves escondidas o con el kilometraje alterado. Un diagnóstico requiere el auto varias horas en taller.'],
     ['¿Qué recibo al final?', 'Un informe en PDF con el checklist de las 8 etapas, fotos de lo que encontramos y una idea de cuánto cuesta reparar cada detalle, para que negocies el precio con respaldo.'],
     ['¿Revisan cualquier marca?', 'Sí. Revisamos autos, SUV y camionetas multimarca, a bencina y diésel, incluidos vehículos de alta gama.'],
-    ['¿A qué comunas van?', 'La Serena, Coquimbo y Ovalle. Para otras comunas de la región, escríbenos y lo coordinamos.'],
+    ['¿A qué comunas van?', 'La Serena y Coquimbo. Para otras comunas de la región, escríbenos y lo coordinamos.'],
   ];
   const faq = () => `
     <section class="section">
@@ -175,7 +175,7 @@
         <div class="trust__item"><span class="ic">${ic('scan')}</span><div><b>Recorrido en 8 etapas</b><span>Siempre en el mismo orden, sin saltarse nada.</span></div></div>
         <div class="trust__item"><span class="ic">${ic('doc')}</span><div><b>Informe con fotos</b><span>Checklist completo y costo estimado de reparaciones.</span></div></div>
         <div class="trust__item"><span class="ic">${ic('video')}</span><div><b>Inspección remota</b><span>Si no puedes ir, te mandamos todo en vivo.</span></div></div>
-        <div class="trust__item"><span class="ic">${ic('pin')}</span><div><b>Hecho en Coquimbo</b><span>La Serena, Coquimbo, Ovalle y más.</span></div></div>
+        <div class="trust__item"><span class="ic">${ic('pin')}</span><div><b>Hecho en Coquimbo</b><span>La Serena y Coquimbo.</span></div></div>
       </div>
     </div>
 
@@ -477,7 +477,7 @@
 
   /* -------- Agenda: arma la solicitud y la envía por WhatsApp -------- */
   const booking = { step: 0, date: null, time: null, data: { presente: 'si', donde: 'Particular' }, month: null, sent: false };
-  const COMUNAS = ['La Serena', 'Coquimbo', 'Ovalle', 'Otra comuna'];
+  const COMUNAS = ['La Serena', 'Coquimbo', 'Otra comuna'];
   const STEPS = ['Fecha y hora', 'Vehículo y datos', 'Enviar'];
   const SLOTS = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00', '18:30'];
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
