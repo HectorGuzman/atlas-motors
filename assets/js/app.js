@@ -256,30 +256,189 @@
     </section>`;
   }
 
-  function viewProximamente() {
+  /* ---------------- marketplace (autos publicados desde la app de inspecciones) ---------------- */
+  // Firestore: colección pública `publicaciones` del proyecto atlas-motors-cl (solo lectura).
+  const FS = 'https://firestore.googleapis.com/v1/projects/atlas-motors-cl/databases/(default)/documents/publicaciones';
+  const FS_KEY = 'AIzaSyA2LXQSXJFZKdlGvuGuSqqA5uesFft6XSg';
+  const fsVal = (v) => {
+    if ('stringValue' in v) return v.stringValue;
+    if ('integerValue' in v) return Number(v.integerValue);
+    if ('doubleValue' in v) return v.doubleValue;
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('timestampValue' in v) return v.timestampValue;
+    if ('arrayValue' in v) return (v.arrayValue.values || []).map(fsVal);
+    if ('mapValue' in v) return fsObj(v.mapValue.fields || {});
+    return null;
+  };
+  const fsObj = (f) => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, fsVal(v)]));
+  let autos = null; // caché mientras dura la visita
+  async function cargarAutos() {
+    if (autos) return autos;
+    const r = await fetch(`${FS}?pageSize=300&key=${FS_KEY}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    autos = (j.documents || []).map((d) => fsObj(d.fields || {}))
+      .sort((a, b) => String(b.publicado || '').localeCompare(String(a.publicado || '')));
+    return autos;
+  }
+  const nombreAuto = (a) => [a.marca, a.modelo, a.anio].filter(Boolean).join(' ');
+  const nivelCls = ['ok', 'obs', 'fail'];
+  const fechaISO = (ts) => (ts ? fecha(String(ts).slice(0, 10)) : '');
+
+  const autoCard = (a) => `
+    <a class="car-card" href="#/auto/${esc(a.id)}">
+      <div class="car-card__media">
+        ${a.fotos && a.fotos[0] ? `<img src="${esc(a.fotos[0])}" alt="${esc(nombreAuto(a))}" loading="lazy">` : ''}
+        <span class="seal"><img src="assets/img/logo-shield.png" alt="">Inspeccionado</span>
+        ${a.puntaje != null ? `<span class="score">${a.puntaje}/100</span>` : ''}
+        ${a.fotos && a.fotos.length > 1 ? `<span class="count">${ic('camera')} ${a.fotos.length}</span>` : ''}
+      </div>
+      <div class="car-card__body">
+        <h3 class="car-card__title">${esc(nombreAuto(a))}</h3>
+        ${a.recomendacion ? `<div><span class="status status--${nivelCls[a.nivel] || 'ok'}">${esc(a.recomendacion)}</span></div>` : ''}
+        <div class="car-card__specs">${[a.km != null ? km(a.km) : '', a.transmision, a.combustible].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('')}</div>
+        <div class="car-card__foot">
+          <span class="price">${a.precio ? clp(a.precio) : 'Consultar'}</span>
+          ${a.comuna ? `<span class="car-card__loc">${ic('pin')} ${esc(a.comuna)}</span>` : ''}
+        </div>
+      </div>
+    </a>`;
+
+  function viewAutos() {
     return `
     <section class="page-hero">
       <div class="container">
-        <div class="crumbs"><a href="#/">Inicio</a> / Vehículos</div>
+        <div class="crumbs"><a href="#/">Inicio</a> / Autos en venta</div>
         <h1>Autos inspeccionados</h1>
-        <p>Estamos preparando el marketplace de Atlas Motors: autos que ya pasaron nuestra inspección, con fotos e informe a la vista. Muy pronto.</p>
+        <p>Autos en venta que ya pasaron nuestra inspección precompra. Cada uno trae su puntaje, los puntos a considerar y la ficha de inspección para descargar.</p>
       </div>
     </section>
-    <section class="section">
-      <div class="container">
-        <div class="callout">
-          <span class="ic">${ic('target')}</span>
-          <div>
-            <h3>¿Buscas auto ahora?</h3>
-            <p>Mientras tanto, podemos buscarlo por ti o inspeccionar el que ya encontraste.</p>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-              <a class="btn btn--gold" href="#/busqueda">${ic('target')} Búsqueda personalizada</a>
-              <a class="btn btn--outline" href="#/agendar">${ic('calendar')} Agendar inspección</a>
-            </div>
-          </div>
+    <section class="section section--tight">
+      <div class="container"><div id="autos" class="grid grid--cars"><p style="color:var(--muted)">Cargando autos…</p></div></div>
+    </section>`;
+  }
+
+  const sinAutos = () => `
+    <div class="callout" style="grid-column:1/-1">
+      <span class="ic">${ic('target')}</span>
+      <div>
+        <h3>Por ahora no hay autos publicados</h3>
+        <p>Podemos buscar el auto por ti o inspeccionar el que ya encontraste. ¿Vas a vender el tuyo? Lo inspeccionamos y lo publicamos aquí con su informe.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <a class="btn btn--gold" href="#/busqueda">${ic('target')} Búsqueda personalizada</a>
+          <a class="btn btn--outline" href="${waLink('Hola Atlas Motors, quiero vender mi auto con inspección.')}" target="_blank" rel="noopener">${ic('chat')} Quiero vender mi auto</a>
         </div>
       </div>
-    </section>`;
+    </div>`;
+
+  async function bindAutos() {
+    const box = $('#autos');
+    try {
+      const list = await cargarAutos();
+      if (!document.body.contains(box)) return;
+      box.innerHTML = list.length ? list.map(autoCard).join('') : sinAutos();
+    } catch (e) {
+      if (document.body.contains(box)) box.innerHTML = `<div class="empty" style="grid-column:1/-1">No pudimos cargar los autos. Revisa tu conexión y vuelve a intentar.</div>`;
+    }
+  }
+
+  function viewAutoShell() {
+    return `<section class="section--tight" style="padding-top:28px"><div class="container" id="auto"><p style="color:var(--muted)">Cargando…</p></div></section>`;
+  }
+
+  function autoHtml(a) {
+    const fotos = a.fotos || [];
+    const c = a.conteo || {};
+    const hs = a.hallazgos || [];
+    const msg = `Hola Atlas Motors, me interesa el ${nombreAuto(a)}${a.precio ? ' de ' + clp(a.precio) : ''} publicado en atlasmotors.cl (ref. ${a.folio || a.id}).`;
+    return `
+      <div class="crumbs" style="color:var(--muted);margin-bottom:18px"><a href="#/">Inicio</a> / <a href="#/autos">Autos en venta</a> / ${esc(nombreAuto(a))}</div>
+      <div class="detail">
+        <div>
+          ${fotos.length ? `
+          <div class="gallery" id="gallery">
+            <div id="galleryStage"></div>
+            ${fotos.length > 1 ? `<div class="gallery__thumbs">${fotos.map((f, i) => `<button class="${i === 0 ? 'on' : ''}" data-i="${i}" aria-label="Foto ${i + 1}"><img src="${esc(f)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+          </div>` : ''}
+
+          <div class="panel" style="margin-top:20px">
+            <h3>Resultado de la inspección</h3>
+            ${a.comentario ? `<p style="color:var(--muted)">${esc(a.comentario)}</p>` : ''}
+            <div class="legend" style="margin:8px 0 14px">
+              <span class="status status--ok">✓ ${c.bien || 0} en buen estado</span>
+              <span class="status status--obs">! ${c.obs || 0} con observación</span>
+              <span class="status status--fail">✕ ${c.problema || 0} con problema</span>
+            </div>
+            <h4 style="margin:0 0 10px">Puntos a considerar</h4>
+            ${hs.length ? `<ul class="obs-list">${hs.map((h) => `<li><span class="dot dot--${nivelCls[h.nivel] || 'obs'}">!</span><span><b>${esc(h.punto)}</b>: ${esc(String(h.estado).toLowerCase())} <small style="color:var(--muted)">· ${esc(h.etapa)}</small></span></li>`).join('')}</ul>`
+              : `<p style="color:var(--muted);margin:0">El inspector no registró observaciones ni problemas.</p>`}
+          </div>
+
+          ${(a.etapas || []).length ? `
+          <div class="panel">
+            <h3>Revisión por etapa</h3>
+            <div class="cat-grid">
+              ${a.etapas.map((e) => { const st = e.problema ? 'b' : e.obs ? 'w' : ''; const t = e.problema ? `${e.problema} con problema` : e.obs ? `${e.obs} con observación` : 'Sin observaciones'; return `<div class="cat">${esc(e.titulo)}<em class="${st}">${t}</em></div>`; }).join('')}
+            </div>
+          </div>` : ''}
+
+          ${a.descripcion ? `<div class="panel"><h3>Descripción del vendedor</h3><p style="color:var(--muted);margin:0;white-space:pre-line">${esc(a.descripcion)}</p></div>` : ''}
+        </div>
+
+        <aside>
+          <div class="panel">
+            <span class="pill">${ic('shield')} Inspeccionado por Atlas Motors</span>
+            <h1>${esc(nombreAuto(a))}</h1>
+            <div class="price">${a.precio ? clp(a.precio) : 'Precio a consultar'}</div>
+            ${a.comuna ? `<small style="color:var(--muted)">${ic('pin')} ${esc(a.comuna)}</small>` : ''}
+            <div class="specs">
+              ${a.km != null ? `<div class="spec">${ic('gauge')}<div><small>Kilometraje</small><b>${km(a.km)}</b></div></div>` : ''}
+              ${a.anio ? `<div class="spec">${ic('calendar')}<div><small>Año</small><b>${esc(a.anio)}</b></div></div>` : ''}
+              ${a.transmision ? `<div class="spec">${ic('gear')}<div><small>Transmisión</small><b>${esc(a.transmision)}</b></div></div>` : ''}
+              ${a.combustible ? `<div class="spec">${ic('fuel')}<div><small>Combustible</small><b>${esc(a.combustible)}</b></div></div>` : ''}
+            </div>
+            <div class="verified">
+              ${a.puntaje != null ? `<div class="ring" style="--v:${a.puntaje}"><div>${a.puntaje}<small>de 100</small></div></div>` : '<span></span>'}
+              <div><h3>${esc(a.recomendacion || 'Ficha de inspección')}</h3><p>Inspección realizada el ${fechaISO(a.fechaInspeccion)}: carrocería, motor, parte baja, interior, escáner y prueba de ruta.</p></div>
+              ${a.ficha ? `<a class="btn btn--gold" href="${esc(a.ficha)}" target="_blank" rel="noopener">${ic('download')} Descargar ficha de inspección</a>` : ''}
+            </div>
+            <div class="contact-actions">
+              <a class="btn btn--green btn--block" href="${waLink(msg)}" target="_blank" rel="noopener">${ic('chat')} Me interesa: escribir por WhatsApp</a>
+            </div>
+            <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0">El precio y la descripción son del vendedor. La ficha refleja el estado del auto el día de la inspección.</p>
+          </div>
+        </aside>
+      </div>`;
+  }
+
+  async function bindAuto(id) {
+    const box = $('#auto');
+    let a;
+    try {
+      a = (await cargarAutos()).find((x) => x.id === id);
+    } catch (e) {
+      if (document.body.contains(box)) box.innerHTML = `<div class="empty">No pudimos cargar el auto. Revisa tu conexión y vuelve a intentar.</div>`;
+      return;
+    }
+    if (!document.body.contains(box)) return;
+    if (!a) { box.innerHTML = `<div class="empty">Este auto ya no está publicado. <a href="#/autos">Ver otros autos</a></div>`; return; }
+    document.title = `${nombreAuto(a)} en venta · Atlas Motors`;
+    box.innerHTML = autoHtml(a);
+    const fotos = a.fotos || [];
+    if (!fotos.length) return;
+    let idx = 0;
+    const stage = $('#galleryStage');
+    const draw = () => {
+      $$('.gallery__thumbs button[data-i]').forEach((b) => b.classList.toggle('on', +b.dataset.i === idx));
+      stage.innerHTML = `<div class="gallery__main"><img src="${esc(fotos[idx])}" alt="${esc(nombreAuto(a))}, foto ${idx + 1}">
+        ${fotos.length > 1 ? `<button class="gallery__nav gallery__nav--prev" data-nav="-1" aria-label="Anterior">${ic('left')}</button>
+        <button class="gallery__nav gallery__nav--next" data-nav="1" aria-label="Siguiente">${ic('right')}</button>` : ''}</div>`;
+    };
+    $('#gallery').addEventListener('click', (e) => {
+      const th = e.target.closest('[data-i]'); if (th) { idx = +th.dataset.i; draw(); return; }
+      const n = e.target.closest('[data-nav]'); if (n) { idx = (idx + +n.dataset.nav + fotos.length) % fotos.length; draw(); }
+    });
+    draw();
   }
 
   function viewInforme(id) {
@@ -771,7 +930,8 @@
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
       case undefined: html = viewHome(); break;
-      case 'autos': case 'auto': html = viewProximamente(); nav = 'autos'; break;
+      case 'autos': html = viewAutos(); bind = bindAutos; nav = 'autos'; break;
+      case 'auto': html = viewAutoShell(); bind = () => bindAuto(parts[1]); nav = 'autos'; break;
       case 'informe': html = viewInforme(parts[1] || CARS[0].id); nav = 'inspeccion'; break;
       case 'inspeccion': html = viewInspeccion(); break;
       case 'agendar': html = viewAgendar(); bind = bindAgendar; break;
@@ -786,7 +946,7 @@
     bind && bind();
     document.body.classList.toggle('on-agendar', nav === 'agendar');
     reveal();
-    document.title = ({ home: 'Atlas Motors · Inspección precompra de vehículos en la Región de Coquimbo', autos: 'Autos inspeccionados · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors' })[nav] || 'Atlas Motors';
+    document.title = ({ home: 'Atlas Motors · Inspección precompra de vehículos en la Región de Coquimbo', autos: 'Autos en venta · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors' })[nav] || 'Atlas Motors';
   }
 
   /* Aparición suave de las secciones al hacer scroll */
