@@ -291,6 +291,9 @@
     hallazgos: lista(a.hallazgos).map((h) => ({ punto: txt((h || {}).punto, 120), etapa: txt((h || {}).etapa, 60), estado: txt((h || {}).estado, 60), nivel: num((h || {}).nivel, 0, 2) })),
     fotos: lista(a.fotos).filter((u) => STORAGE_OK.test(String(u))).slice(0, 40),
     ficha: STORAGE_OK.test(String(a.ficha || '')) ? a.ficha : null,
+    videos: lista(a.videos).filter((v) => v && STORAGE_OK.test(String(v.url))).slice(0, 4).map((v) => ({
+      url: v.url, poster: STORAGE_OK.test(String(v.poster || '')) ? v.poster : null, nota: txt(v.nota, 300), segundos: num(v.segundos, 0, 120),
+    })),
     fechaInspeccion: /^\d{4}-\d{2}-\d{2}/.test(String(a.fechaInspeccion || '')) ? String(a.fechaInspeccion) : '',
     publicado: txt(a.publicado, 40),
   });
@@ -314,7 +317,7 @@
         ${a.fotos && a.fotos[0] ? `<img src="${esc(a.fotos[0])}" alt="${esc(nombreAuto(a))}" loading="lazy">` : ''}
         <span class="seal"><img src="assets/img/logo-shield.png" alt="">Inspeccionado</span>
         ${a.puntaje != null ? `<span class="score">${a.puntaje}/100</span>` : ''}
-        ${a.fotos && a.fotos.length > 1 ? `<span class="count">${ic('camera')} ${a.fotos.length}</span>` : ''}
+        ${(a.fotos && a.fotos.length > 1) || (a.videos || []).length ? `<span class="count">${a.fotos.length > 1 ? `${ic('camera')} ${a.fotos.length}` : ''}${(a.videos || []).length ? `${ic('video')} ${a.videos.length}` : ''}</span>` : ''}
       </div>
       <div class="car-card__body">
         <h3 class="car-card__title">${esc(nombreAuto(a))}</h3>
@@ -382,6 +385,17 @@
           <div class="gallery" id="gallery">
             <div id="galleryStage"></div>
             ${fotos.length > 1 ? `<div class="gallery__thumbs">${fotos.map((f, i) => `<button class="${i === 0 ? 'on' : ''}" data-i="${i}" aria-label="Foto ${i + 1}"><img src="${esc(f)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+          </div>` : ''}
+
+          ${(a.videos || []).length ? `
+          <div class="panel" style="margin-top:20px">
+            <h3>Videos</h3>
+            <div class="videos">
+              ${a.videos.map((v) => `<figure class="clip">
+                <video controls playsinline preload="none"${v.poster ? ` poster="${esc(v.poster)}"` : ''} src="${esc(v.url)}"></video>
+                ${v.nota ? `<figcaption>${esc(v.nota)}</figcaption>` : ''}
+              </figure>`).join('')}
+            </div>
           </div>` : ''}
 
           <div class="panel" style="margin-top:20px">
