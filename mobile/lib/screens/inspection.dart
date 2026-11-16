@@ -164,7 +164,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
                     fontWeight: FontWeight.w600, color: i.recomendacion == r ? Colors.white : C.text),
                 onSelected: (sel) {
                   setState(() => i.recomendacion = sel ? r : null);
-                  Store.I.save();
+                  Store.I.save(i);
                 },
               ),
           ]),
@@ -177,7 +177,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
             decoration: const InputDecoration(hintText: 'Resumen para el cliente: estado general y qué considerar al negociar.'),
             onChanged: (v) {
               i.conclusion = v;
-              Store.I.save();
+              Store.I.guardarAlEscribir(i);
             },
           ),
         ],

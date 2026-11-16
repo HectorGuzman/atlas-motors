@@ -64,7 +64,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
       ..lugar = c['lugar']!.text.trim()
       ..fecha = _fecha
       ..modalidad = _modalidad;
-    await Store.I.save();
+    await Store.I.save(i);
     if (!mounted) return;
     if (!comenzar) {
       ScaffoldMessenger.of(context)

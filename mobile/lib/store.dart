@@ -6,8 +6,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -160,7 +159,7 @@ class Inspection {
 ///   (bucket `atlas-motors-cl-fotos`, ruta fotos/{inspección}/{archivo}).
 ///   Las que no alcanzan a subir quedan en cola; las que faltan en este
 ///   teléfono se descargan al sincronizar.
-class Store extends ChangeNotifier {
+class Store extends ChangeNotifier with WidgetsBindingObserver {
   Store._();
   static final Store I = Store._();
 
@@ -191,6 +190,13 @@ class Store extends ChangeNotifier {
   File get _file => File('${_dir.path}/inspecciones-v2.json');
   File photoFile(String name) => File('${_dir.path}/fotos/$name');
 
+  /// Versión reducida de la foto para el PDF (se crea la primera vez que se usa).
+  File photoPdfFile(String name) => File('${_dir.path}/fotos-pdf/$name');
+
+  /// Fotos de la inspección que todavía no están en este teléfono.
+  int fotosFaltantes(Inspection i) =>
+      i.results.values.expand((r) => r.fotos).where((f) => !photoFile(f).existsSync()).length;
+
   Future<void> init() async {
     _dir = await getApplicationDocumentsDirectory();
     await Directory('${_dir.path}/fotos').create(recursive: true);
@@ -207,7 +213,24 @@ class Store extends ChangeNotifier {
       _porSubir = Set<String>.from(jsonDecode(await _colaFile.readAsString()) as List);
     }
     userEmail = _auth.currentUser?.email;
+    WidgetsBinding.instance.addObserver(this);
     if (userEmail != null) unawaited(sync());
+  }
+
+  /// Fotos tomadas en este teléfono que todavía no llegan a la nube.
+  int get fotosPorSubir => _porSubir.length;
+
+  DateTime? _ultimaSync;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      unawaited(guardarPendiente()); // que no se pierda lo que estaba escribiendo
+    } else if (state == AppLifecycleState.resumed && userEmail != null) {
+      // Al volver a la app: trae cambios y reintenta fotos (máximo una vez por minuto).
+      final u = _ultimaSync;
+      if (u == null || DateTime.now().difference(u) > const Duration(minutes: 1)) unawaited(sync());
+    }
   }
 
   /// Inicia sesión. Devuelve un mensaje de error para mostrar, o null si entró.
@@ -251,9 +274,18 @@ class Store extends ChangeNotifier {
 
   /// Guarda en el teléfono y sube a la nube lo que cambió.
   /// Firestore deja los cambios en cola si no hay señal y los sube después.
-  Future<void> save() async {
+  ///
+  /// Con [solo] revisa únicamente esa inspección (lo normal al editar);
+  /// sin él revisa todas (al sincronizar).
+  Future<void> save([Inspection? solo]) async {
+    // Si este guardado incluye lo que se estaba escribiendo, ya no hace falta esperar.
+    if (solo == null || solo == _pendiente) {
+      _escribiendo?.cancel();
+      _escribiendo = null;
+      _pendiente = null;
+    }
     final now = DateTime.now();
-    for (final i in inspections) {
+    for (final i in solo == null ? inspections : [solo]) {
       if (i.id == _ejemploId) continue;
       final json = jsonEncode(i.toJson());
       if (_enNube[i.id] == json) continue;
@@ -263,6 +295,26 @@ class Store extends ChangeNotifier {
     }
     await _writeLocal();
     notifyListeners();
+  }
+
+  /// Para campos de texto: guarda cuando deja de escribir un momento, no en cada tecla.
+  Timer? _escribiendo;
+  Inspection? _pendiente;
+  void guardarAlEscribir(Inspection i) {
+    if (_pendiente != null && _pendiente != i) save(_pendiente);
+    _pendiente = i;
+    _escribiendo?.cancel();
+    _escribiendo = Timer(const Duration(milliseconds: 800), () {
+      _pendiente = null;
+      save(i);
+    });
+  }
+
+  /// Guarda de inmediato lo que esté esperando (al salir de la app o de una pantalla).
+  Future<void> guardarPendiente() async {
+    final p = _pendiente;
+    _pendiente = null;
+    if (p != null) await save(p);
   }
 
   void _subir(Inspection i) {
@@ -280,6 +332,7 @@ class Store extends ChangeNotifier {
   /// Trae las inspecciones de la nube y las junta con las del teléfono.
   Future<void> sync() async {
     if (_auth.currentUser == null) return;
+    _ultimaSync = DateTime.now();
     try {
       final snap = await _col.get();
       final locales = {for (final i in inspections) i.id: i};
@@ -331,6 +384,7 @@ class Store extends ChangeNotifier {
           await _fotosNube.child(clave).putFile(file, SettableMetadata(contentType: 'image/jpeg'));
           _porSubir.remove(clave);
           await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
+          notifyListeners();
         } catch (e) {
           debugPrint('Foto pendiente $clave: $e');
           break;
@@ -380,10 +434,11 @@ class Store extends ChangeNotifier {
   Future<void> delete(Inspection i) async {
     for (final r in i.results.values) {
       for (final f in r.fotos) {
-        final file = photoFile(f);
-        if (await file.exists()) await file.delete();
+        await _borrarFotoLocal(f);
+        _porSubir.remove('${i.id}/$f');
       }
     }
+    await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
     inspections.remove(i);
     _enNube.remove(i.id);
     if (i.id != _ejemploId && _auth.currentUser != null) {
@@ -407,11 +462,17 @@ class Store extends ChangeNotifier {
     return name;
   }
 
-  Future<void> removePhoto(ItemResult r, String name) async {
+  Future<void> removePhoto(Inspection i, ItemResult r, String name) async {
     r.fotos.remove(name);
-    final f = photoFile(name);
-    if (await f.exists()) await f.delete();
-    await save();
+    await _borrarFotoLocal(name);
+    if (_porSubir.remove('${i.id}/$name')) await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
+    await save(i);
+  }
+
+  Future<void> _borrarFotoLocal(String name) async {
+    for (final f in [photoFile(name), photoPdfFile(name)]) {
+      if (await f.exists()) await f.delete();
+    }
   }
 
   Inspection _ejemplo() {

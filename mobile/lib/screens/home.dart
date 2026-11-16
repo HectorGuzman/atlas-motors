@@ -70,6 +70,25 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('Hola, ${store.userName}', style: display(24)),
           const SizedBox(height: 4),
           Text(store.inspections.length == 1 ? '1 inspección' : '${store.inspections.length} inspecciones', style: const TextStyle(color: C.muted)),
+          if (store.fotosPorSubir > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(color: const Color(0xFFFFF3D6), borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                const Icon(Icons.cloud_upload_outlined, size: 20, color: Color(0xFF8A5A00)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    store.fotosPorSubir == 1
+                        ? '1 foto por subir a la nube. Se sube sola cuando haya señal; no borres la app.'
+                        : '${store.fotosPorSubir} fotos por subir a la nube. Se suben solas cuando haya señal; no borres la app.',
+                    style: const TextStyle(color: Color(0xFF8A5A00), fontSize: 13),
+                  ),
+                ),
+              ]),
+            ),
+          ],
           const SizedBox(height: 16),
           TextField(
             onChanged: (v) => setState(() => _q = v),

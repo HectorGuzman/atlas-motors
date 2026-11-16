@@ -105,7 +105,7 @@ class _ItemCardState extends State<_ItemCard> {
   }
 
   void _changed() {
-    Store.I.save();
+    Store.I.save(widget.inspection);
     widget.onChanged();
   }
 
@@ -143,6 +143,26 @@ class _ItemCardState extends State<_ItemCard> {
     }
   }
 
+  Future<void> _borrarFoto(String name) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('¿Borrar esta foto?'),
+        content: const Text('Se quita de este punto y del informe.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              style: TextButton.styleFrom(foregroundColor: C.sev[2]),
+              child: const Text('Borrar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await Store.I.removePhoto(widget.inspection, r, name);
+    widget.onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     final sev = _sev;
@@ -172,7 +192,7 @@ class _ItemCardState extends State<_ItemCard> {
               decoration: const InputDecoration(hintText: 'Comentario breve', isDense: true),
               onChanged: (v) {
                 r.nota = v;
-                Store.I.save();
+                Store.I.guardarAlEscribir(widget.inspection);
               },
             ),
           ],
@@ -190,7 +210,8 @@ class _ItemCardState extends State<_ItemCard> {
               ),
               onChanged: (v) {
                 r.costo = int.tryParse(v);
-                _changed();
+                Store.I.guardarAlEscribir(widget.inspection);
+                widget.onChanged();
               },
             ),
           ],
@@ -206,6 +227,8 @@ class _ItemCardState extends State<_ItemCard> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Image.file(Store.I.photoFile(r.fotos[k]), width: 96, height: 72, fit: BoxFit.cover,
+                        // Decodifica a tamaño miniatura, no la foto completa de 1600 px.
+                        cacheWidth: 288,
                         // La foto puede no estar todavía en este teléfono (se tomó en otro y se está bajando).
                         errorBuilder: (_, _, _) => Container(
                             width: 96, height: 72, color: const Color(0xFFEFE8D6),
@@ -215,10 +238,7 @@ class _ItemCardState extends State<_ItemCard> {
                     right: 2,
                     top: 2,
                     child: GestureDetector(
-                      onTap: () async {
-                        await Store.I.removePhoto(r, r.fotos[k]);
-                        widget.onChanged();
-                      },
+                      onTap: () => _borrarFoto(r.fotos[k]),
                       child: Container(
                         padding: const EdgeInsets.all(3),
                         decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),

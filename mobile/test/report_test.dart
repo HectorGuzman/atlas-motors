@@ -8,7 +8,6 @@ import 'package:intl/date_symbol_data_local.dart';
 void main() {
   test('genera el informe PDF', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    HttpOverrides.global = null; // permite descargar la tipografía
     await initializeDateFormatting('es');
     final i = Inspection(id: 't', folio: 'ATM-261110-101', fecha: DateTime(2026, 11, 10), cliente: 'Cliente de ejemplo',
         marca: 'Mitsubishi', modelo: 'L200', anio: '2020', patente: 'LXJR-55', km: '78400', lugar: 'Coquimbo',

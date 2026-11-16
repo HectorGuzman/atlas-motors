@@ -24,12 +24,14 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Para tomar fotos del vehículo durante la inspección.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Para adjuntar fotos del vehículo al informe.</string>
+	<string>Para adjuntar al informe fotos del vehículo, por ejemplo capturas del video de los lentes.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

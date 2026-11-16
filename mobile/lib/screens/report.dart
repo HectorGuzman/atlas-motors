@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -19,9 +20,23 @@ class ReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = 'Informe ${inspection.vehiculo} ${inspection.patente}'.trim().replaceAll(RegExp(r'\s+'), ' ');
+    final faltan = Store.I.fotosFaltantes(inspection);
     return Scaffold(
       appBar: AppBar(title: const Text('Informe')),
-      body: PdfPreview(
+      body: Column(children: [
+        if (faltan > 0)
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFFFF3D6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Text(
+              faltan == 1
+                  ? 'Falta 1 foto por descargar a este teléfono: no aparece en el informe. Revisa tu señal y vuelve a abrirlo.'
+                  : 'Faltan $faltan fotos por descargar a este teléfono: no aparecen en el informe. Revisa tu señal y vuelve a abrirlo.',
+              style: const TextStyle(color: Color(0xFF8A5A00), fontSize: 13),
+            ),
+          ),
+        Expanded(child: PdfPreview(
         build: (_) => buildReport(inspection),
         pdfFileName: '$name.pdf',
         canChangePageFormat: false,
@@ -29,9 +44,30 @@ class ReportScreen extends StatelessWidget {
         canDebug: false,
         allowPrinting: false,
         loadingWidget: const CircularProgressIndicator(),
-      ),
+      )),
+      ]),
     );
   }
+}
+
+/// La foto en el informe mide ~9 cm de ancho. Se guarda la versión
+/// reducida para no recomprimir cada vez que se abre el informe.
+Future<Uint8List?> _fotoParaPdf(String name) async {
+  final original = Store.I.photoFile(name);
+  if (!await original.exists()) return null;
+  final reducida = Store.I.photoPdfFile(name);
+  try {
+    if (!await reducida.exists()) {
+      await reducida.parent.create(recursive: true);
+      // El lado corto queda en 700 px (ej. 1600x1200 -> 933x700): nítida a ese tamaño.
+      await FlutterImageCompress.compressAndGetFile(original.path, reducida.path,
+          minWidth: 700, minHeight: 700, quality: 60, keepExif: false);
+    }
+    if (await reducida.exists()) return await reducida.readAsBytes();
+  } catch (e) {
+    debugPrint('No se pudo reducir $name: $e');
+  }
+  return original.readAsBytes();
 }
 
 const _green = PdfColor.fromInt(0xFF0B2418);
@@ -46,21 +82,22 @@ const _sevBg = [PdfColor.fromInt(0xFFE3F4EA), PdfColor.fromInt(0xFFFFF3D6), PdfC
 Future<Uint8List> buildReport(Inspection i) async {
   final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
   final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
-  final font = await PdfGoogleFonts.interRegular();
-  final bold = await PdfGoogleFonts.interBold();
+  // Letras incluidas en la app: el PDF se genera sin internet.
+  final font = pw.Font.ttf(await rootBundle.load('assets/google_fonts/Inter-Regular.ttf'));
+  final bold = pw.Font.ttf(await rootBundle.load('assets/google_fonts/Inter-Bold.ttf'));
   final fecha = DateFormat("d 'de' MMMM 'de' y", 'es').format(i.fecha);
   final km = int.tryParse(i.km);
   final c = i.counts();
   final score = i.score;
   final hallazgos = i.hallazgos;
 
-  // Fotos con su leyenda (sección y punto).
+  // Fotos con su leyenda (sección y punto), reducidas para que el PDF sea liviano.
   final fotos = <(pw.MemoryImage, String)>[];
   for (final s in checklist) {
     for (final it in s.items) {
       for (final f in i.results[it.id]?.fotos ?? const <String>[]) {
-        final file = Store.I.photoFile(f);
-        if (await file.exists()) fotos.add((pw.MemoryImage(await file.readAsBytes()), '${s.title}: ${it.label}'));
+        final bytes = await _fotoParaPdf(f);
+        if (bytes != null) fotos.add((pw.MemoryImage(bytes), '${s.title}: ${it.label}'));
       }
     }
   }
