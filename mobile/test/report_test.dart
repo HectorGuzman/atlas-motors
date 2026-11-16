@@ -18,6 +18,17 @@ void main() {
     i.results['motor.correas'] = ItemResult(opt: 1, nota: 'Correa de accesorios con grietas.', costo: 60000);
     i.results['esc.caja'] = ItemResult(opt: 3);
     i.results.remove('doc.soap');
+    final dir = Directory.systemTemp.createTempSync('atlas');
+    Store.I.usarCarpeta(dir);
+    final mini = Platform.environment['MINI_JPG'];
+    if (mini != null) {
+      Directory('${dir.path}/fotos').createSync();
+      File(mini).copySync('${dir.path}/fotos/v1.jpg');
+    }
+    // Un video subido (sale con QR) y uno pendiente de subir.
+    i.videos.add(Video(archivo: 'v1.mp4', miniatura: 'v1.jpg', nota: 'Ruido metálico al girar', item: 'ruta.embrague',
+        segundos: 18, url: 'https://firebasestorage.googleapis.com/v0/b/atlas-motors-cl-fotos/o/videos%2Ft%2Fv1.mp4'));
+    i.videos.add(Video(archivo: 'v2.mp4', miniatura: 'v2.jpg', segundos: 9));
     final bytes = await run(() => buildReport(i));
     final out = Platform.environment['PDF_OUT'];
     if (out != null) File(out).writeAsBytesSync(bytes);
@@ -36,6 +47,10 @@ void main() {
     final copia = Inspection.fromJson(i.toJson());
     expect(copia.venta?.precio, 17990000);
     expect(copia.venta?.publicada, isNull);
+    expect(copia.videos.length, 2);
+    expect(copia.videos.first.item, 'ruta.embrague');
+    expect(copia.videosDe('ruta.embrague').single.url, startsWith('https://'));
+    expect(copia.todasLasFotos, containsAll(['v1.jpg', 'v2.jpg']));
   });
 }
 

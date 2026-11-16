@@ -6,6 +6,7 @@ import '../checklist.dart';
 import '../messages.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'videos.dart';
 
 /// Puntos de una sección: estado con un toque, comentario, costo estimado y fotos.
 class SectionScreen extends StatefulWidget {
@@ -164,9 +165,20 @@ class _ItemCardState extends State<_ItemCard> {
     widget.onChanged();
   }
 
+  Future<void> _addVideo() async {
+    await agregarVideo(context, widget.inspection, item: it.id);
+    widget.onChanged();
+  }
+
+  Future<void> _verVideo(Video v) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => VideoScreen(inspection: widget.inspection, video: v)));
+    widget.onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     final sev = _sev;
+    final videos = widget.inspection.videosDe(it.id);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -218,15 +230,41 @@ class _ItemCardState extends State<_ItemCard> {
               },
             ),
           ],
-          if (r.fotos.isNotEmpty) ...[
+          if (r.fotos.isNotEmpty || videos.isNotEmpty) ...[
             const SizedBox(height: 10),
             SizedBox(
               height: 72,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: r.fotos.length,
+                itemCount: videos.length + r.fotos.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, k) => Stack(children: [
+                itemBuilder: (_, n) => n < videos.length
+                    ? VideoThumb(videos[n], onTap: () => _verVideo(videos[n]))
+                    : _foto(n - videos.length),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Wrap(spacing: 0, children: [
+            _action(Icons.edit_note, _showNota ? 'Ocultar' : 'Comentario', () => setState(() => _showNota = !_showNota)),
+            _action(Icons.add_a_photo_outlined, 'Foto', _addPhoto),
+            _action(Icons.videocam_outlined, 'Video', _addVideo),
+            if (sev != null && (sev > 0 || r.fotos.isNotEmpty))
+              Builder(
+                builder: (bc) => _action(
+                  Icons.send_outlined,
+                  'Enviar al cliente',
+                  () => compartir(bc, mensajeHallazgo(widget.inspection, widget.section, it, r), fotos: r.fotos),
+                  strong: true,
+                ),
+              ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _foto(int k) => Stack(children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Image.file(Store.I.photoFile(r.fotos[k]), width: 96, height: 72, fit: BoxFit.cover,
@@ -249,28 +287,7 @@ class _ItemCardState extends State<_ItemCard> {
                       ),
                     ),
                   ),
-                ]),
-              ),
-            ),
-          ],
-          const SizedBox(height: 4),
-          Wrap(spacing: 0, children: [
-            _action(Icons.edit_note, _showNota ? 'Ocultar' : 'Comentario', () => setState(() => _showNota = !_showNota)),
-            _action(Icons.add_a_photo_outlined, 'Foto', _addPhoto),
-            if (sev != null && (sev > 0 || r.fotos.isNotEmpty))
-              Builder(
-                builder: (bc) => _action(
-                  Icons.send_outlined,
-                  'Enviar al cliente',
-                  () => compartir(bc, mensajeHallazgo(widget.inspection, widget.section, it, r), fotos: r.fotos),
-                  strong: true,
-                ),
-              ),
-          ]),
-        ]),
-      ),
-    );
-  }
+                ]);
 
   Widget _action(IconData icon, String label, VoidCallback onTap, {bool strong = false}) => TextButton.icon(
         onPressed: onTap,

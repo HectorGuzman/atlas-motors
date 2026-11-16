@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -26,6 +27,31 @@ class Marketplace {
   static DocumentReference<Map<String, dynamic>> _doc(Inspection i) =>
       FirebaseFirestore.instance.collection('publicaciones').doc(i.id);
 
+  static const _nativo = MethodChannel('atlas/video');
+
+  /// Versión de la marca de agua: si cambia, los videos se vuelven a subir.
+  static const _versionMarca = 'm1';
+
+  /// El escudo de la marca de agua, copiado a un archivo para el código nativo.
+  static Future<String> _logo() async {
+    final f = File('${(await getTemporaryDirectory()).path}/marca-escudo.png');
+    if (!await f.exists()) {
+      await f.writeAsBytes((await rootBundle.load('assets/marca-escudo.png')).buffer.asUint8List());
+    }
+    return f.path;
+  }
+
+  /// Copia de la foto con la marca de agua de Atlas Motors.
+  static Future<File> _marcarFoto(File foto, String salida) async {
+    try {
+      await _nativo.invokeMethod('marcarFoto', {'path': foto.path, 'salida': salida, 'logo': await _logo()});
+      return File(salida);
+    } catch (e) {
+      debugPrint('Marca de agua: $e');
+      throw 'No se pudo poner la marca de agua a una foto. Intenta de nuevo.';
+    }
+  }
+
   /// Sube fotos y ficha, y publica (o actualiza) el aviso. Lanza un error con
   /// un mensaje para mostrar si algo falla.
   static Future<void> publicar(Inspection i, void Function(String) avance) async {
@@ -44,14 +70,61 @@ class Marketplace {
       final reducida = File('${tmp.path}/pub-$f');
       final out = await FlutterImageCompress.compressAndGetFile(original.path, reducida.path,
           minWidth: 1600, minHeight: 1200, quality: 72, keepExif: false);
+      final marcada = await _marcarFoto(File(out?.path ?? original.path), '${tmp.path}/pub-m-$f');
       final ref = carpeta.child(f);
-      await ref.putFile(File(out?.path ?? original.path),
+      await ref.putFile(marcada,
           SettableMetadata(contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000'));
       urls.add(await ref.getDownloadURL());
     }
 
+    // Videos: ya vienen comprimidos a 720p. La miniatura va como portada del reproductor.
+    final videos = <Map<String, dynamic>>[];
+    final elegidos = [for (final a in v.videos) ...i.videos.where((x) => x.archivo == a)];
+    for (final (n, video) in elegidos.indexed) {
+      avance('Revisando video ${n + 1} de ${elegidos.length}…');
+      final File archivo;
+      try {
+        archivo = await Store.I.archivoVideo(i, video);
+      } catch (_) {
+        throw 'Uno de los videos elegidos no está en este teléfono ni en la nube. Quítalo o publícalo desde el teléfono donde se grabó.';
+      }
+      final ref = carpeta.child(video.archivo);
+      // Si ya se subió en una publicación anterior (mismo video y misma marca),
+      // no se vuelve a procesar ni a subir: pesa varios MB.
+      final fuente = '${video.archivo}-${archivo.lengthSync()}-$_versionMarca';
+      final yaEsta = await ref.getMetadata().then((m) => m.customMetadata?['fuente'] == fuente, onError: (_) => false);
+      if (!yaEsta) {
+        avance('Poniendo la marca de agua al video ${n + 1}…');
+        final marcado = '${tmp.path}/pub-${video.archivo}';
+        try {
+          await _nativo.invokeMethod('comprimir', {'path': archivo.path, 'salida': marcado, 'logo': await _logo()})
+              .timeout(const Duration(minutes: 3));
+        } catch (e) {
+          debugPrint('Marca de agua en video: $e');
+          throw 'No se pudo poner la marca de agua a un video. Intenta de nuevo o quítalo de la publicación.';
+        }
+        avance('Subiendo video ${n + 1} de ${elegidos.length}…');
+        await ref.putFile(File(marcado), SettableMetadata(
+            contentType: 'video/mp4', cacheControl: 'public, max-age=31536000', customMetadata: {'fuente': fuente}));
+        await File(marcado).delete();
+      }
+      String? poster;
+      final mini = Store.I.photoFile(video.miniatura);
+      if (video.miniatura.isNotEmpty && await mini.exists()) {
+        final posterRef = carpeta.child(video.miniatura);
+        await posterRef.putFile(await _marcarFoto(mini, '${tmp.path}/pub-m-${video.miniatura}'), SettableMetadata(contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000'));
+        poster = await posterRef.getDownloadURL();
+      }
+      videos.add({'url': await ref.getDownloadURL(), 'poster': poster, 'nota': video.nota.trim(), 'segundos': video.segundos});
+    }
+
     avance('Armando la ficha PDF…');
-    final pdf = await buildFicha(i);
+    var k = 0;
+    final pdf = await buildFicha(i, marcar: (bytes) async {
+      final f = File('${tmp.path}/ficha-${k++}.jpg');
+      await f.writeAsBytes(bytes);
+      return (await _marcarFoto(f, '${f.path}.m.jpg')).readAsBytes();
+    });
     final fichaRef = carpeta.child('ficha.pdf');
     await fichaRef.putData(pdf, SettableMetadata(contentType: 'application/pdf', cacheControl: 'no-cache'));
     final ficha = await fichaRef.getDownloadURL();
@@ -84,6 +157,7 @@ class Marketplace {
         for (final h in i.hallazgos) {'punto': h.item.label, 'etapa': h.section.title, 'estado': h.opt.label, 'nivel': h.opt.sev},
       ],
       'fotos': urls,
+      'videos': videos,
       'ficha': ficha,
       'fechaInspeccion': Timestamp.fromDate(i.fecha),
       'publicado': v.publicada == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(v.publicada!),
@@ -92,7 +166,11 @@ class Marketplace {
 
     // Fotos que ya no están en la publicación: se borran de la carpeta pública.
     try {
-      final quedan = {...v.fotos, 'ficha.pdf'};
+      final quedan = {
+        ...v.fotos,
+        for (final video in elegidos) ...[video.archivo, if (video.miniatura.isNotEmpty) video.miniatura],
+        'ficha.pdf',
+      };
       for (final item in (await carpeta.listAll()).items) {
         if (!quedan.contains(item.name)) await item.delete();
       }

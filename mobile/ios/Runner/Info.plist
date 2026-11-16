@@ -29,7 +29,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Para tomar fotos del vehículo durante la inspección.</string>
+	<string>Para tomar fotos y videos del vehículo durante la inspección.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Para grabar el sonido del motor y otros ruidos en los videos de la inspección.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Para adjuntar al informe fotos del vehículo, por ejemplo capturas del video de los lentes.</string>
 	<key>UIApplicationSceneManifest</key>

@@ -7,6 +7,7 @@ import '../marketplace.dart';
 import '../messages.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'videos.dart';
 
 /// Publicar el auto inspeccionado en el marketplace de atlasmotors.cl.
 /// Para cuando el dueño pide la inspección porque lo quiere vender.
@@ -89,6 +90,75 @@ class _PublicarScreenState extends State<PublicarScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(source == ImageSource.camera ? 'No se pudo abrir la cámara.' : 'No se pudo abrir la galería.')));
     }
+  }
+
+  static const maxVideos = 4;
+
+  void _toggleVideo(Video video) {
+    final on = v.videos.contains(video.archivo);
+    if (!on && v.videos.length >= maxVideos) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Máximo $maxVideos videos por publicación.')));
+      return;
+    }
+    setState(() => on ? v.videos.remove(video.archivo) : v.videos.add(video.archivo));
+    Store.I.save(i);
+  }
+
+  Future<void> _grabarVideo() async {
+    final antes = i.videos.length;
+    await agregarVideo(context, i);
+    if (i.videos.length > antes && v.videos.length < maxVideos) {
+      v.videos.add(i.videos.last.archivo);
+      await Store.I.save(i);
+    }
+    if (mounted) setState(() {});
+  }
+
+  Widget _videos() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text('Videos', style: display(18))),
+          Text('${v.videos.length} elegidos', style: const TextStyle(color: C.muted, fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 4),
+        const Text('Opcional, hasta $maxVideos. Por ejemplo, el motor en marcha o una vuelta alrededor del auto.',
+            style: TextStyle(color: C.muted, fontSize: 13)),
+        for (final video in i.videos) ...[
+          const SizedBox(height: 10),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _toggleVideo(video),
+            child: Row(children: [
+              VideoThumb(video, width: 84, height: 60),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(video.nota.trim().isEmpty ? 'Sin descripción' : video.nota.trim(),
+                      maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (_problemaDe(video) case final sev?) ...[
+                    const SizedBox(height: 3),
+                    SevPill(sev == 2 ? 'Muestra un problema' : 'Muestra una observación', sev),
+                  ] else if (puntoDe(video) case final p?)
+                    Text(p, style: const TextStyle(color: C.muted, fontSize: 12.5)),
+                ]),
+              ),
+              Checkbox(value: v.videos.contains(video.archivo), onChanged: (_) => _toggleVideo(video)),
+            ]),
+          ),
+        ],
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _grabarVideo,
+          icon: const Icon(Icons.videocam_outlined),
+          label: const Text('Agregar video para la venta'),
+        ),
+      ]);
+
+  /// Gravedad del punto asociado al video, si es una observación o problema.
+  int? _problemaDe(Video video) {
+    final f = video.item == null ? null : findItem(video.item!);
+    final sev = f == null ? null : _sevDe(f.$2);
+    return sev != null && sev > 0 ? sev : null;
   }
 
   void _toggle(String f) {
@@ -281,6 +351,8 @@ class _PublicarScreenState extends State<PublicarScreen> {
           ]),
           const SizedBox(height: 12),
           _fotos(),
+          const SizedBox(height: 22),
+          _videos(),
           const SizedBox(height: 22),
           Text('Lo que ven los compradores', style: display(18)),
           const SizedBox(height: 4),

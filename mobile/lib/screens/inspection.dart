@@ -8,6 +8,7 @@ import '../theme.dart';
 import 'publicar.dart';
 import 'report.dart';
 import 'section.dart';
+import 'videos.dart';
 import 'vehicle_form.dart';
 
 /// Resumen de una inspección: datos, avance por sección, conclusión e informe.
@@ -154,6 +155,8 @@ class _InspectionScreenState extends State<InspectionScreen> {
           for (final s in checklist) ...[_SectionTile(i, s, onTap: () => _go(SectionScreen(inspection: i, section: s))), const SizedBox(height: 10)],
           const SizedBox(height: 14),
           _Hallazgos(i),
+          const SizedBox(height: 14),
+          VideosCard(i),
           const SizedBox(height: 22),
           Text('Conclusión', style: display(18)),
           const SizedBox(height: 10),

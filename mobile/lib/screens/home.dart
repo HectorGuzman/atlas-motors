@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('Hola, ${store.userName}', style: display(24)),
           const SizedBox(height: 4),
           Text(store.inspections.length == 1 ? '1 inspección' : '${store.inspections.length} inspecciones', style: const TextStyle(color: C.muted)),
-          if (store.fotosPorSubir > 0) ...[
+          if (store.fotosPorSubir + store.videosPorSubir > 0) ...[
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -80,9 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    store.fotosPorSubir == 1
-                        ? '1 foto por subir a la nube. Se sube sola cuando haya señal; no borres la app.'
-                        : '${store.fotosPorSubir} fotos por subir a la nube. Se suben solas cuando haya señal; no borres la app.',
+                    '${porSubir(store.fotosPorSubir, store.videosPorSubir)} por subir a la nube. '
+                    'Se suben solos cuando haya señal; no borres la app.',
                     style: const TextStyle(color: Color(0xFF8A5A00), fontSize: 13),
                   ),
                 ),
@@ -183,3 +182,9 @@ class _InspectionCard extends StatelessWidget {
     );
   }
 }
+
+/// "3 fotos y 1 video", "1 foto", "2 videos".
+String porSubir(int fotos, int videos) => [
+      if (fotos > 0) fotos == 1 ? '1 foto' : '$fotos fotos',
+      if (videos > 0) videos == 1 ? '1 video' : '$videos videos',
+    ].join(' y ');

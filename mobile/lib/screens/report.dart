@@ -11,6 +11,7 @@ import 'package:printing/printing.dart';
 import '../checklist.dart';
 import '../store.dart';
 import '../theme.dart' show clp;
+import 'videos.dart' show duracion, puntoDe;
 
 /// Vista previa del informe, con botón para compartir (WhatsApp, correo, etc.).
 class ReportScreen extends StatelessWidget {
@@ -109,6 +110,94 @@ List<pw.Widget> _fotosEnFilas(pw.Widget titulo, List<(pw.MemoryImage, String)> f
   ];
 }
 
+/// Videos en el informe: miniatura, qué muestra y un QR (y enlace) para verlo.
+/// Un PDF no reproduce video, así que se abre en el navegador del cliente.
+Future<List<pw.Widget>> _videosPdf(Inspection i, pw.Widget titulo, pw.Font bold) async {
+  final filas = <pw.Widget>[];
+  for (final v in i.videos) {
+    final mini = await fotoParaPdf(v.miniatura);
+    final punto = puntoDe(v);
+    filas.add(pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: _line), borderRadius: pw.BorderRadius.circular(4)),
+      child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+        pw.SizedBox(
+          width: 110,
+          height: 72,
+          child: pw.Stack(alignment: pw.Alignment.center, children: [
+            if (mini != null)
+              pw.ClipRRect(
+                  horizontalRadius: 3,
+                  verticalRadius: 3,
+                  child: pw.Image(pw.MemoryImage(mini), width: 110, height: 72, fit: pw.BoxFit.cover))
+            else
+              pw.Container(width: 110, height: 72, color: _green),
+            pw.Container(
+              width: 24,
+              height: 24,
+              decoration: const pw.BoxDecoration(color: PdfColor(0, 0, 0, .55), shape: pw.BoxShape.circle),
+              child: pw.Center(
+                child: pw.CustomPaint(
+                  size: const PdfPoint(9, 10),
+                  painter: (canvas, size) => canvas
+                    ..setFillColor(PdfColors.white)
+                    ..moveTo(1, 0)
+                    ..lineTo(1, size.y)
+                    ..lineTo(size.x, size.y / 2)
+                    ..closePath()
+                    ..fillPath(),
+                ),
+              ),
+            ),
+          ]),
+        ),
+        pw.SizedBox(width: 10),
+        pw.Expanded(
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(v.nota.trim().isEmpty ? 'Video de la inspección' : v.nota.trim(),
+                style: pw.TextStyle(font: bold, fontSize: 9.5, color: _green)),
+            pw.SizedBox(height: 2),
+            pw.Text([?punto, duracion(v.segundos)].join(' · '), style: const pw.TextStyle(fontSize: 8.5, color: _muted)),
+            pw.SizedBox(height: 4),
+            if (v.url != null)
+              pw.UrlLink(
+                destination: v.url!,
+                child: pw.Text('Ver video',
+                    style: pw.TextStyle(font: bold, fontSize: 8.5, color: _gold, decoration: pw.TextDecoration.underline)),
+              )
+            else
+              pw.Text('Video pendiente de subir: vuelve a generar el informe cuando haya señal.',
+                  style: const pw.TextStyle(fontSize: 8, color: _muted)),
+          ]),
+        ),
+        if (v.url != null) ...[
+          pw.SizedBox(width: 10),
+          pw.UrlLink(
+            destination: v.url!,
+            child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: v.url!, width: 64, height: 64, color: _green),
+          ),
+        ],
+      ]),
+    ));
+  }
+  if (filas.isEmpty) return [];
+  return [
+    pw.Inseparable(
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        titulo,
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 6),
+          child: pw.Text('Escanea el código o toca "Ver video" para verlo con sonido.',
+              style: const pw.TextStyle(fontSize: 8.5, color: _muted)),
+        ),
+        filas.first,
+      ]),
+    ),
+    ...filas.skip(1),
+  ];
+}
+
 Future<Uint8List> buildReport(Inspection i) async {
   final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
   final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
@@ -144,6 +233,8 @@ Future<Uint8List> buildReport(Inspection i) async {
         decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: _gold, width: 1.5))),
         child: pw.Text(t.toUpperCase(), style: pw.TextStyle(font: bold, fontSize: 11, color: _green, letterSpacing: .8)),
       );
+
+  final videos = await _videosPdf(i, h2('Videos'), bold);
 
   pw.Widget kv(String k, String v) => pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 3),
@@ -359,6 +450,8 @@ Future<Uint8List> buildReport(Inspection i) async {
 
       ..._fotosEnFilas(h2('Registro fotográfico'), fotos),
 
+      ...videos,
+
       h2('Alcance de la inspección'),
       pw.Container(
         padding: const pw.EdgeInsets.all(12),
@@ -420,7 +513,9 @@ const alcance = [
 /// Va con las fotos que eligió el vendedor, pero los puntos con observación
 /// o problema se muestran siempre (como texto), para que el comprador confíe
 /// en el sello de Atlas Motors. No incluye patente ni datos del dueño.
-Future<Uint8List> buildFicha(Inspection i) async {
+/// [marcar] recibe la foto reducida y devuelve la versión con marca de agua
+/// (la ficha es pública: va al marketplace).
+Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List)? marcar}) async {
   final v = i.venta!;
   final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
   final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
@@ -439,7 +534,8 @@ Future<Uint8List> buildFicha(Inspection i) async {
   };
   final fotos = <(pw.MemoryImage, String)>[];
   for (final f in v.fotos) {
-    final bytes = await fotoParaPdf(f);
+    var bytes = await fotoParaPdf(f);
+    if (bytes != null && marcar != null) bytes = await marcar(bytes);
     if (bytes != null) fotos.add((pw.MemoryImage(bytes), leyendas[f] ?? ''));
   }
 
