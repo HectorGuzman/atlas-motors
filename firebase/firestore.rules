@@ -40,7 +40,7 @@ service cloud.firestore {
       let storage = '^https://firebasestorage[.]googleapis[.]com/v0/b/atlas-motors-cl-fotos/o/publicaciones%2F.*';
       return d.keys().hasOnly(['id', 'folio', 'marca', 'modelo', 'anio', 'km', 'precio', 'comuna', 'combustible',
             'transmision', 'descripcion', 'comentario', 'puntaje', 'recomendacion', 'nivel', 'conteo', 'etapas',
-            'hallazgos', 'fotos', 'ficha', 'fechaInspeccion', 'publicado', 'actualizado'])
+            'hallazgos', 'fotos', 'videos', 'ficha', 'fechaInspeccion', 'publicado', 'actualizado'])
         && d.id == id
         && d.marca is string && d.marca.size() <= 60
         && d.modelo is string && d.modelo.size() <= 80
@@ -53,6 +53,7 @@ service cloud.firestore {
         && d.descripcion is string && d.descripcion.size() <= 3000
         && d.comentario is string && d.comentario.size() <= 3000
         && d.fotos is list && d.fotos.size() <= 40
+        && (!('videos' in d) || (d.videos is list && d.videos.size() <= 4))
         && d.hallazgos is list && d.hallazgos.size() <= 100
         && d.etapas is list && d.etapas.size() <= 20
         && d.ficha is string && d.ficha.matches(storage);

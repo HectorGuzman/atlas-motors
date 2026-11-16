@@ -22,11 +22,12 @@ teléfono, comuna y los datos del auto, y los usamos para coordinar y prestar el
 
 **Si inspeccionamos un auto para ti.** Registramos tu nombre y teléfono, los datos del vehículo
 (marca, modelo, año, patente y kilometraje), el lugar de la inspección, el resultado del checklist,
-comentarios y fotos del vehículo. Los usamos para hacer la inspección, preparar el informe y
+comentarios, fotos y videos cortos del vehículo (con sonido, para registrar ruidos o fugas).
+Los usamos para hacer la inspección, preparar el informe y
 enviártelo, y para responder consultas o reclamos sobre el servicio.
 
 **Si publicas tu auto en nuestro marketplace.** Publicamos solo los datos del vehículo, el precio,
-la comuna, las fotos que elijas y el resumen de la inspección. **No publicamos tu nombre, teléfono
+la comuna, las fotos y videos que elijas y el resumen de la inspección. **No publicamos tu nombre, teléfono
 ni la patente.** Los interesados nos escriben a nosotros. Solo publicamos con tu autorización y
 puedes pedir que lo quitemos en cualquier momento.
 
@@ -45,7 +46,7 @@ interés legítimo para seguridad y prevención de fraudes; obligaciones legales
 No vendemos tus datos. Los compartimos solo con proveedores que nos ayudan a operar, que los
 tratan por encargo nuestro:
 
-- **Google (Firebase / Google Cloud):** almacenamiento de inspecciones y fotos. Los servidores
+- **Google (Firebase / Google Cloud):** almacenamiento de inspecciones, fotos y videos. Los servidores
   están en Chile (Santiago) y en Estados Unidos.
 - **GitHub:** alojamiento del sitio web (no recibe datos de clientes).
 - **WhatsApp (Meta):** comunicación contigo, cuando tú nos escribes.
