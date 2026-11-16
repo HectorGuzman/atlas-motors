@@ -5,6 +5,7 @@ import '../checklist.dart';
 import '../messages.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'publicar.dart';
 import 'report.dart';
 import 'section.dart';
 import 'vehicle_form.dart';
@@ -180,7 +181,56 @@ class _InspectionScreenState extends State<InspectionScreen> {
               Store.I.guardarAlEscribir(i);
             },
           ),
+          if (!i.esEjemplo) ...[
+            const SizedBox(height: 22),
+            _Venta(i, onTap: () => _go(PublicarScreen(inspection: i))),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// Acceso a publicar el auto en atlasmotors.cl (cuando el dueño lo quiere vender).
+class _Venta extends StatelessWidget {
+  final Inspection i;
+  final VoidCallback onTap;
+  const _Venta(this.i, {required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final v = i.venta;
+    final publicada = v?.publicada != null;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: i.respondidos == 0 ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: publicada ? C.sevBg[0] : C.green900, borderRadius: BorderRadius.circular(13)),
+              child: Icon(publicada ? Icons.check_circle : Icons.storefront_outlined, color: publicada ? C.sev[0] : C.gold300),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(publicada ? 'Publicado en atlasmotors.cl' : '¿El dueño lo quiere vender?',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5)),
+                const SizedBox(height: 2),
+                Text(
+                  publicada
+                      ? [if (v!.precio != null) clp(v.precio!), 'Toca para editar o quitar'].join(' · ')
+                      : 'Publícalo en el marketplace con el sello de la inspección.',
+                  style: const TextStyle(color: C.muted, fontSize: 13),
+                ),
+              ]),
+            ),
+            const Icon(Icons.chevron_right, color: C.muted),
+          ]),
+        ),
       ),
     );
   }

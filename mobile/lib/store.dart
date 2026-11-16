@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'checklist.dart';
+import 'marketplace.dart';
 
 class ItemResult {
   int? opt; // índice de la opción elegida
@@ -43,6 +44,44 @@ const modalidadDetalle = [
 
 const recomendaciones = ['Compra recomendada', 'Compra con observaciones', 'Compra no recomendada'];
 
+const combustibles = ['Bencina', 'Diésel', 'Híbrido', 'Eléctrico'];
+const transmisiones = ['Manual', 'Automática'];
+
+/// Datos para vender el auto en el marketplace de atlasmotors.cl.
+/// Solo se usa cuando el dueño del auto pidió la inspección para venderlo.
+class Venta {
+  int? precio;
+  String comuna, combustible, transmision, descripcion, comentario;
+  List<String> fotos; // fotos elegidas para la publicación, en orden (la primera es la portada)
+  bool autorizada; // el dueño autorizó publicar
+  DateTime? publicada; // null si no está en la web
+
+  Venta({
+    this.precio,
+    this.comuna = '',
+    this.combustible = '',
+    this.transmision = '',
+    this.descripcion = '',
+    this.comentario = '',
+    List<String>? fotos,
+    this.autorizada = false,
+    this.publicada,
+  }) : fotos = fotos ?? [];
+
+  Map<String, dynamic> toJson() => {
+        'precio': precio, 'comuna': comuna, 'combustible': combustible, 'transmision': transmision,
+        'descripcion': descripcion, 'comentario': comentario, 'fotos': fotos, 'autorizada': autorizada,
+        'publicada': publicada?.toIso8601String(),
+      };
+
+  factory Venta.fromJson(Map<String, dynamic> j) => Venta(
+        precio: j['precio'], comuna: j['comuna'] ?? '', combustible: j['combustible'] ?? '',
+        transmision: j['transmision'] ?? '', descripcion: j['descripcion'] ?? '', comentario: j['comentario'] ?? '',
+        fotos: List<String>.from(j['fotos'] ?? []), autorizada: j['autorizada'] ?? false,
+        publicada: j['publicada'] == null ? null : DateTime.parse(j['publicada']),
+      );
+}
+
 class Inspection {
   String id, folio;
   DateTime fecha;
@@ -51,6 +90,7 @@ class Inspection {
   int? recomendacion;
   int modalidad; // índice en [modalidades]
   Map<String, ItemResult> results;
+  Venta? venta; // solo si el auto se va a vender en atlasmotors.cl
   DateTime actualizado; // último cambio, para decidir qué copia gana al sincronizar
 
   Inspection({
@@ -70,9 +110,13 @@ class Inspection {
     this.recomendacion,
     this.modalidad = 0,
     Map<String, ItemResult>? results,
+    this.venta,
     DateTime? actualizado,
   })  : results = results ?? {},
         actualizado = actualizado ?? fecha;
+
+  /// La inspección de ejemplo que trae la app (no se respalda ni se publica).
+  bool get esEjemplo => id == 'ejemplo';
 
   String get vehiculo => [marca, modelo, anio].where((s) => s.isNotEmpty).join(' ');
   ItemResult result(String itemId) => results.putIfAbsent(itemId, () => ItemResult());
@@ -132,7 +176,11 @@ class Inspection {
           for (final e in results.entries)
             if (!e.value.isEmpty) e.key: e.value.toJson()
         },
+        if (venta != null) 'venta': venta!.toJson(),
       };
+
+  /// Todas las fotos de la inspección: las de cada punto y las tomadas para la venta.
+  Iterable<String> get todasLasFotos => {...results.values.expand((r) => r.fotos), ...?venta?.fotos};
 
   factory Inspection.fromJson(Map<String, dynamic> j) => Inspection(
         id: j['id'], folio: j['folio'], fecha: DateTime.parse(j['fecha']),
@@ -143,6 +191,7 @@ class Inspection {
         modalidad: j['modalidad'] ?? 0,
         results: (j['results'] as Map<String, dynamic>? ?? {})
             .map((k, v) => MapEntry(k, ItemResult.fromJson(Map<String, dynamic>.from(v)))),
+        venta: j['venta'] == null ? null : Venta.fromJson(Map<String, dynamic>.from(j['venta'])),
         actualizado: j['actualizado'] == null ? null : DateTime.parse(j['actualizado']),
       );
 
@@ -195,7 +244,7 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Fotos de la inspección que todavía no están en este teléfono.
   int fotosFaltantes(Inspection i) =>
-      i.results.values.expand((r) => r.fotos).where((f) => !photoFile(f).existsSync()).length;
+      i.todasLasFotos.where((f) => !photoFile(f).existsSync()).length;
 
   Future<void> init() async {
     _dir = await getApplicationDocumentsDirectory();
@@ -400,17 +449,15 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
     var nuevas = false;
     for (final i in inspections) {
       if (i.id == _ejemploId) continue;
-      for (final r in i.results.values) {
-        for (final f in r.fotos) {
-          final file = photoFile(f);
-          if (await file.exists() || _porSubir.contains('${i.id}/$f')) continue;
-          try {
-            await _fotosNube.child('${i.id}/$f').writeToFile(file);
-            nuevas = true;
-          } catch (e) {
-            debugPrint('No se pudo bajar $f: $e');
-            if (await file.exists()) await file.delete();
-          }
+      for (final f in i.todasLasFotos) {
+        final file = photoFile(f);
+        if (await file.exists() || _porSubir.contains('${i.id}/$f')) continue;
+        try {
+          await _fotosNube.child('${i.id}/$f').writeToFile(file);
+          nuevas = true;
+        } catch (e) {
+          debugPrint('No se pudo bajar $f: $e');
+          if (await file.exists()) await file.delete();
         }
       }
     }
@@ -432,11 +479,16 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> delete(Inspection i) async {
-    for (final r in i.results.values) {
-      for (final f in r.fotos) {
-        await _borrarFotoLocal(f);
-        _porSubir.remove('${i.id}/$f');
+    if (i.venta?.publicada != null) {
+      try {
+        await Marketplace.despublicar(i);
+      } catch (e) {
+        debugPrint('No se pudo quitar la publicación de ${i.folio}: $e');
       }
+    }
+    for (final f in i.todasLasFotos) {
+      await _borrarFotoLocal(f);
+      _porSubir.remove('${i.id}/$f');
     }
     await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
     inspections.remove(i);
@@ -464,8 +516,20 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> removePhoto(Inspection i, ItemResult r, String name) async {
     r.fotos.remove(name);
+    i.venta?.fotos.remove(name);
     await _borrarFotoLocal(name);
     if (_porSubir.remove('${i.id}/$name')) await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
+    await save(i);
+  }
+
+  /// Quita una foto de la publicación. Si era una foto tomada solo para la
+  /// venta (no está en ningún punto del checklist), se borra del teléfono.
+  Future<void> quitarFotoVenta(Inspection i, String name) async {
+    i.venta?.fotos.remove(name);
+    if (!i.results.values.any((r) => r.fotos.contains(name))) {
+      await _borrarFotoLocal(name);
+      if (_porSubir.remove('${i.id}/$name')) await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
+    }
     await save(i);
   }
 

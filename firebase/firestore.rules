@@ -25,6 +25,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Marketplace de atlasmotors.cl: autos en venta. Cualquiera los lee (la web
+    // los muestra sin login); solo el equipo los publica, edita o quita.
+    // No llevan patente ni datos del dueño.
+    match /publicaciones/{id} {
+      allow read: if true;
+      allow write: if esEquipo();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

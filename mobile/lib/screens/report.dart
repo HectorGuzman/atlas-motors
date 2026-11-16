@@ -52,7 +52,7 @@ class ReportScreen extends StatelessWidget {
 
 /// La foto en el informe mide ~9 cm de ancho. Se guarda la versión
 /// reducida para no recomprimir cada vez que se abre el informe.
-Future<Uint8List?> _fotoParaPdf(String name) async {
+Future<Uint8List?> fotoParaPdf(String name) async {
   final original = Store.I.photoFile(name);
   if (!await original.exists()) return null;
   final reducida = Store.I.photoPdfFile(name);
@@ -79,6 +79,36 @@ const _line = PdfColor.fromInt(0xFFE4DFD1);
 const _sev = [PdfColor.fromInt(0xFF1F8A4C), PdfColor.fromInt(0xFFC98A06), PdfColor.fromInt(0xFFC0392B)];
 const _sevBg = [PdfColor.fromInt(0xFFE3F4EA), PdfColor.fromInt(0xFFFFF3D6), PdfColor.fromInt(0xFFFDE4E1)];
 
+/// Fotos de a dos por fila. El título va pegado a la primera fila para que no
+/// quede solo al final de una página.
+List<pw.Widget> _fotosEnFilas(pw.Widget titulo, List<(pw.MemoryImage, String)> fotos) {
+  pw.Widget foto((pw.MemoryImage, String) f) => pw.SizedBox(
+        width: 255,
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.ClipRRect(horizontalRadius: 4, verticalRadius: 4, child: pw.Image(f.$1, width: 255, height: 180, fit: pw.BoxFit.cover)),
+          if (f.$2.isNotEmpty) ...[
+            pw.SizedBox(height: 3),
+            pw.Text(f.$2, style: const pw.TextStyle(fontSize: 8, color: _muted)),
+          ],
+        ]),
+      );
+  final filas = <pw.Widget>[
+    for (var k = 0; k < fotos.length; k += 2)
+      pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 10),
+        child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          foto(fotos[k]),
+          if (k + 1 < fotos.length) ...[pw.SizedBox(width: 10), foto(fotos[k + 1])],
+        ]),
+      ),
+  ];
+  if (filas.isEmpty) return [];
+  return [
+    pw.Inseparable(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [titulo, filas.first])),
+    ...filas.skip(1),
+  ];
+}
+
 Future<Uint8List> buildReport(Inspection i) async {
   final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
   final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
@@ -96,7 +126,7 @@ Future<Uint8List> buildReport(Inspection i) async {
   for (final s in checklist) {
     for (final it in s.items) {
       for (final f in i.results[it.id]?.fotos ?? const <String>[]) {
-        final bytes = await _fotoParaPdf(f);
+        final bytes = await fotoParaPdf(f);
         if (bytes != null) fotos.add((pw.MemoryImage(bytes), '${s.title}: ${it.label}'));
       }
     }
@@ -327,21 +357,7 @@ Future<Uint8List> buildReport(Inspection i) async {
       h2('Checklist de inspección'),
       for (final (n, s) in checklist.indexed) sectionTable(s, n + 1),
 
-      if (fotos.isNotEmpty) ...[
-        h2('Registro fotográfico'),
-        pw.Wrap(spacing: 10, runSpacing: 10, children: [
-          for (final (img, caption) in fotos)
-            pw.SizedBox(
-              width: 255,
-              child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                pw.ClipRRect(
-                    horizontalRadius: 4, verticalRadius: 4, child: pw.Image(img, width: 255, height: 180, fit: pw.BoxFit.cover)),
-                pw.SizedBox(height: 3),
-                pw.Text(caption, style: const pw.TextStyle(fontSize: 8, color: _muted)),
-              ]),
-            ),
-        ]),
-      ],
+      ..._fotosEnFilas(h2('Registro fotográfico'), fotos),
 
       h2('Alcance de la inspección'),
       pw.Container(
@@ -399,3 +415,215 @@ const alcance = [
       'la forma de conducir, el estado de los caminos y la frecuencia de mantenimiento que reciba el vehículo.',
   'Los costos de reparación indicados son referenciales y pueden variar según el taller y los repuestos.',
 ];
+
+/// Ficha de inspección para el marketplace: resumen público del informe.
+/// Va con las fotos que eligió el vendedor, pero los puntos con observación
+/// o problema se muestran siempre (como texto), para que el comprador confíe
+/// en el sello de Atlas Motors. No incluye patente ni datos del dueño.
+Future<Uint8List> buildFicha(Inspection i) async {
+  final v = i.venta!;
+  final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
+  final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
+  final font = pw.Font.ttf(await rootBundle.load('assets/google_fonts/Inter-Regular.ttf'));
+  final bold = pw.Font.ttf(await rootBundle.load('assets/google_fonts/Inter-Bold.ttf'));
+  final fecha = DateFormat("d 'de' MMMM 'de' y", 'es').format(i.fecha);
+  final km = int.tryParse(i.km);
+  final c = i.counts();
+  final score = i.score;
+  final hallazgos = i.hallazgos;
+
+  final leyendas = <String, String>{
+    for (final s in checklist)
+      for (final it in s.items)
+        for (final f in i.results[it.id]?.fotos ?? const <String>[]) f: '${s.title}: ${it.label}',
+  };
+  final fotos = <(pw.MemoryImage, String)>[];
+  for (final f in v.fotos) {
+    final bytes = await fotoParaPdf(f);
+    if (bytes != null) fotos.add((pw.MemoryImage(bytes), leyendas[f] ?? ''));
+  }
+
+  pw.Widget pill(String text, int sev) => pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: pw.BoxDecoration(color: sev < 0 ? _cream : _sevBg[sev], borderRadius: pw.BorderRadius.circular(4)),
+        child: pw.Text(text, style: pw.TextStyle(font: bold, fontSize: 8.5, color: sev < 0 ? _muted : _sev[sev])),
+      );
+  pw.Widget h2(String t) => pw.Container(
+        margin: const pw.EdgeInsets.only(top: 16, bottom: 8),
+        padding: const pw.EdgeInsets.only(bottom: 4),
+        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: _gold, width: 1.5))),
+        child: pw.Text(t.toUpperCase(), style: pw.TextStyle(font: bold, fontSize: 11, color: _green, letterSpacing: .8)),
+      );
+  pw.Widget cell(String t, {bool b = false, bool right = false, PdfColor? color}) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        child: pw.Text(t,
+            textAlign: right ? pw.TextAlign.right : pw.TextAlign.left,
+            style: pw.TextStyle(font: b ? bold : font, fontSize: 9, color: color)),
+      );
+
+  final datos = [
+    if (i.anio.isNotEmpty) i.anio,
+    if (km != null) '${NumberFormat.decimalPattern('es').format(km)} km',
+    if (v.combustible.isNotEmpty) v.combustible,
+    if (v.transmision.isNotEmpty) v.transmision,
+    if (v.comuna.isNotEmpty) v.comuna,
+  ].join('  ·  ');
+
+  final doc = pw.Document(title: 'Ficha de inspección ${i.vehiculo}', author: 'Atlas Motors');
+  doc.addPage(pw.MultiPage(
+    pageTheme: pw.PageTheme(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.fromLTRB(32, 28, 32, 30),
+      theme: pw.ThemeData.withFont(base: font, bold: bold),
+    ),
+    footer: (ctx) => pw.Container(
+      margin: const pw.EdgeInsets.only(top: 8),
+      padding: const pw.EdgeInsets.only(top: 6),
+      decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(color: _line, width: .5))),
+      child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+        pw.Text('Atlas Motors - atlasmotors.cl - Inspección ${i.folio}', style: const pw.TextStyle(fontSize: 8, color: _muted)),
+        pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 8, color: _muted)),
+      ]),
+    ),
+    build: (ctx) => [
+      pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: const pw.BoxDecoration(color: PdfColors.black, border: pw.Border(bottom: pw.BorderSide(color: _gold, width: 3))),
+        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+          pw.Image(logo, height: 46),
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+            pw.Text('FICHA DE INSPECCIÓN · AUTO EN VENTA', style: pw.TextStyle(font: bold, fontSize: 10.5, color: _gold300)),
+            pw.SizedBox(height: 3),
+            pw.Text('Inspeccionado el $fecha', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
+          ]),
+        ]),
+      ),
+      pw.SizedBox(height: 16),
+      pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+        pw.Expanded(
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(i.vehiculo, style: pw.TextStyle(font: bold, fontSize: 20, color: _green)),
+            if (datos.isNotEmpty) pw.Padding(
+                padding: const pw.EdgeInsets.only(top: 3),
+                child: pw.Text(datos, style: const pw.TextStyle(fontSize: 10, color: _muted))),
+            if (v.precio != null) pw.Padding(
+                padding: const pw.EdgeInsets.only(top: 6),
+                child: pw.Text(clp(v.precio!), style: pw.TextStyle(font: bold, fontSize: 16, color: _green))),
+            pw.SizedBox(height: 8),
+            pw.Wrap(spacing: 6, runSpacing: 4, children: [
+              pill('${c[0]} en buen estado', 0),
+              pill('${c[1]} con observación', 1),
+              pill('${c[2]} con problema', 2),
+            ]),
+            if (i.recomendacion != null) ...[
+              pw.SizedBox(height: 8),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: pw.BoxDecoration(color: _sev[i.recomendacion!], borderRadius: pw.BorderRadius.circular(4)),
+                child: pw.Text(recomendaciones[i.recomendacion!].toUpperCase(),
+                    style: pw.TextStyle(font: bold, fontSize: 9.5, color: PdfColors.white, letterSpacing: .5)),
+              ),
+            ],
+          ]),
+        ),
+        if (score != null)
+          pw.Container(
+            width: 78,
+            height: 78,
+            decoration: pw.BoxDecoration(color: _green, shape: pw.BoxShape.circle, border: pw.Border.all(color: _gold, width: 4)),
+            alignment: pw.Alignment.center,
+            child: pw.Column(mainAxisSize: pw.MainAxisSize.min, children: [
+              pw.Text('$score', style: pw.TextStyle(font: bold, fontSize: 24, color: _gold300)),
+              pw.Text('de 100', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey300)),
+            ]),
+          ),
+      ]),
+      if (v.comentario.trim().isNotEmpty) ...[
+        h2('Comentario del inspector'),
+        pw.Text(v.comentario.trim(), style: const pw.TextStyle(fontSize: 10, lineSpacing: 2)),
+      ],
+      if (v.descripcion.trim().isNotEmpty) ...[
+        h2('Descripción del vendedor'),
+        pw.Text(v.descripcion.trim(), style: const pw.TextStyle(fontSize: 10, lineSpacing: 2)),
+      ],
+      h2('Resumen por etapa'),
+      pw.Table(
+        columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FlexColumnWidth(1), 2: pw.FlexColumnWidth(1), 3: pw.FlexColumnWidth(1)},
+        children: [
+          pw.TableRow(decoration: const pw.BoxDecoration(color: _cream), children: [
+            cell('ETAPA', b: true, color: _muted),
+            cell('BIEN', b: true, right: true, color: _sev[0]),
+            cell('OBS.', b: true, right: true, color: _sev[1]),
+            cell('PROBLEMA', b: true, right: true, color: _sev[2]),
+          ]),
+          for (final s in checklist)
+            if (i.answeredIn(s) > 0)
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: _line, width: .5))),
+                children: [
+                  cell(s.title),
+                  for (final n in i.counts(s)) cell(n == 0 ? '-' : '$n', right: true),
+                ],
+              ),
+        ],
+      ),
+      h2('Puntos a considerar'),
+      if (hallazgos.isEmpty)
+        pw.Text('El inspector no registró observaciones ni problemas.', style: const pw.TextStyle(fontSize: 10))
+      else
+        pw.Table(
+          columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FlexColumnWidth(1.4)},
+          children: [
+            for (final h in hallazgos)
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: _line, width: .5))),
+                children: [
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                    child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                      pw.Text(h.item.label, style: pw.TextStyle(font: bold, fontSize: 9.5)),
+                      pw.Text(h.section.title, style: const pw.TextStyle(fontSize: 8, color: _muted)),
+                    ]),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                    child: pw.Align(alignment: pw.Alignment.topRight, child: pill(h.opt.label, h.opt.sev)),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ..._fotosEnFilas(h2('Fotos'), fotos),
+      h2('Sobre esta ficha'),
+      pw.Container(
+        padding: const pw.EdgeInsets.all(12),
+        decoration: pw.BoxDecoration(border: pw.Border.all(color: _gold, width: 1), borderRadius: pw.BorderRadius.circular(4)),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          for (final t in [
+            'Resumen de la inspección precompra que Atlas Motors le hizo a este vehículo el $fecha. '
+                'Muestra todos los puntos con observación o problema; las fotos las eligió el vendedor.',
+            'El precio y la descripción del vendedor son responsabilidad del vendedor.',
+            ...alcance.where((t) => !t.startsWith('Los costos')).map((t) => t.replaceFirst('Este informe', 'Esta ficha')),
+          ])
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 4),
+              child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('•  ', style: const pw.TextStyle(fontSize: 8.5, color: _muted)),
+                pw.Expanded(child: pw.Text(t, style: const pw.TextStyle(fontSize: 8.5, lineSpacing: 1.5))),
+              ]),
+            ),
+        ]),
+      ),
+      pw.SizedBox(height: 18),
+      pw.Row(children: [
+        pw.Image(shield, height: 36),
+        pw.SizedBox(width: 10),
+        pw.Expanded(
+          child: pw.Text('¿Te interesa este auto? Escríbenos por WhatsApp al +56 9 3559 5554 o visita atlasmotors.cl',
+              style: pw.TextStyle(font: bold, fontSize: 9.5, color: _green)),
+        ),
+      ]),
+    ],
+  ));
+  return doc.save();
+}

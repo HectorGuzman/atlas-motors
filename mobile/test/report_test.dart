@@ -26,6 +26,16 @@ void main() {
     expect(i.costoTotal, 510000);
     expect(i.tieneFallasGraves, isTrue);
     expect(i.hallazgos.first.item.id, 'ruta.embrague'); // lo grave primero
+
+    // Ficha pública para el marketplace.
+    i.venta = Venta(precio: 17990000, comuna: 'Coquimbo', combustible: 'Diésel', transmision: 'Manual',
+        comentario: i.conclusion, autorizada: true);
+    final ficha = await buildFicha(i);
+    expect(ficha.length, greaterThan(10000));
+    // La venta viaja con la inspección (se respalda y sincroniza).
+    final copia = Inspection.fromJson(i.toJson());
+    expect(copia.venta?.precio, 17990000);
+    expect(copia.venta?.publicada, isNull);
   });
 }
 
