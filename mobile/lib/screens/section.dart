@@ -38,6 +38,7 @@ class _SectionScreenState extends State<SectionScreen> {
         ],
       ),
       body: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
         children: [
           Text(s.resumen, style: const TextStyle(color: C.muted, fontSize: 14)),
@@ -190,6 +191,7 @@ class _ItemCardState extends State<_ItemCard> {
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(hintText: 'Comentario breve', isDense: true),
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               onChanged: (v) {
                 r.nota = v;
                 Store.I.guardarAlEscribir(widget.inspection);
@@ -201,6 +203,7 @@ class _ItemCardState extends State<_ItemCard> {
             TextField(
               controller: _costo,
               keyboardType: TextInputType.number,
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)],
               decoration: const InputDecoration(
                 isDense: true,

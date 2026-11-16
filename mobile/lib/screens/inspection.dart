@@ -53,8 +53,12 @@ class _InspectionScreenState extends State<InspectionScreen> {
     if (mounted) setState(() {});
   }
 
+  // Se redibuja con cada guardado: las secciones se recorren con "Siguiente"
+  // (pushReplacement), así que no basta con refrescar al volver de la primera.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(listenable: Store.I, builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
     final score = i.score;
     final c = i.counts();
     final km = int.tryParse(i.km);
@@ -80,6 +84,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
         ),
       ),
       body: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           Container(
@@ -151,23 +156,17 @@ class _InspectionScreenState extends State<InspectionScreen> {
           const SizedBox(height: 22),
           Text('Conclusión', style: display(18)),
           const SizedBox(height: 10),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (var r = 0; r < recomendaciones.length; r++)
-              ChoiceChip(
-                label: Text(recomendaciones[r]),
-                selected: i.recomendacion == r,
-                showCheckmark: false,
-                selectedColor: C.sev[r],
-                backgroundColor: Colors.white,
-                side: BorderSide(color: i.recomendacion == r ? C.sev[r] : C.line),
-                labelStyle: TextStyle(
-                    fontWeight: FontWeight.w600, color: i.recomendacion == r ? Colors.white : C.text),
-                onSelected: (sel) {
-                  setState(() => i.recomendacion = sel ? r : null);
-                  Store.I.save(i);
-                },
-              ),
-          ]),
+          for (var r = 0; r < recomendaciones.length; r++) ...[
+            _Veredicto(
+              r,
+              selected: i.recomendacion == r,
+              onTap: () {
+                setState(() => i.recomendacion = i.recomendacion == r ? null : r);
+                Store.I.save(i);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
           const SizedBox(height: 12),
           TextField(
             controller: _conclusion,
@@ -175,12 +174,68 @@ class _InspectionScreenState extends State<InspectionScreen> {
             maxLines: 8,
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(hintText: 'Resumen para el cliente: estado general y qué considerar al negociar.'),
+            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             onChanged: (v) {
               i.conclusion = v;
               Store.I.guardarAlEscribir(i);
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Opción de conclusión: tarjeta grande con ícono, título y explicación corta.
+class _Veredicto extends StatelessWidget {
+  final int r;
+  final bool selected;
+  final VoidCallback onTap;
+  const _Veredicto(this.r, {required this.selected, required this.onTap});
+
+  static const _iconos = [Icons.verified_outlined, Icons.report_outlined, Icons.block_outlined];
+  static const _detalle = [
+    'Buen estado general. Nada relevante que reparar.',
+    'Se puede comprar, considerando los hallazgos al negociar.',
+    'Problemas importantes o costosos. Mejor no comprar.',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final color = C.sev[r];
+    return Material(
+      color: selected ? C.sevBg[r] : Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: selected ? color : C.line, width: selected ? 2 : 1.2),
+          ),
+          child: Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: selected ? color : C.sevBg[r], borderRadius: BorderRadius.circular(12)),
+              child: Icon(_iconos[r], color: selected ? Colors.white : color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(recomendaciones[r],
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5, color: selected ? color : C.green950)),
+                const SizedBox(height: 2),
+                Text(_detalle[r], style: const TextStyle(color: C.muted, fontSize: 12.5, height: 1.25)),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off, color: selected ? color : C.line),
+          ]),
+        ),
       ),
     );
   }
