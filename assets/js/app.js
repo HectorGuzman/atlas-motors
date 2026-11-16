@@ -271,13 +271,36 @@
     return null;
   };
   const fsObj = (f) => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, fsVal(v)]));
+  // Lo que viene de Firestore se trata como no confiable: números como números
+  // y solo enlaces a nuestro Storage (nada de javascript: ni sitios externos).
+  const STORAGE_OK = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/atlas-motors-cl-fotos\/o\/publicaciones%2F[^"'<>\s]*$/;
+  const num = (v, min = 0, max = Infinity) => {
+    const n = typeof v === 'number' ? v : (typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : NaN);
+    return Number.isFinite(n) && n >= min && n <= max ? Math.round(n) : null;
+  };
+  const txt = (v, max = 3000) => (v == null ? '' : String(v).slice(0, max));
+  const lista = (v) => (Array.isArray(v) ? v : []);
+  const limpiarAuto = (a) => ({
+    id: txt(a.id, 64), folio: txt(a.folio, 40), marca: txt(a.marca, 60), modelo: txt(a.modelo, 80),
+    anio: num(a.anio, 1950, 2100), km: num(a.km), precio: num(a.precio, 1), comuna: txt(a.comuna, 60),
+    combustible: txt(a.combustible, 30), transmision: txt(a.transmision, 30), descripcion: txt(a.descripcion),
+    comentario: txt(a.comentario), puntaje: num(a.puntaje, 0, 100), recomendacion: txt(a.recomendacion, 60),
+    nivel: num(a.nivel, 0, 2),
+    conteo: { bien: num((a.conteo || {}).bien) || 0, obs: num((a.conteo || {}).obs) || 0, problema: num((a.conteo || {}).problema) || 0 },
+    etapas: lista(a.etapas).map((e) => ({ titulo: txt((e || {}).titulo, 60), bien: num((e || {}).bien) || 0, obs: num((e || {}).obs) || 0, problema: num((e || {}).problema) || 0 })),
+    hallazgos: lista(a.hallazgos).map((h) => ({ punto: txt((h || {}).punto, 120), etapa: txt((h || {}).etapa, 60), estado: txt((h || {}).estado, 60), nivel: num((h || {}).nivel, 0, 2) })),
+    fotos: lista(a.fotos).filter((u) => STORAGE_OK.test(String(u))).slice(0, 40),
+    ficha: STORAGE_OK.test(String(a.ficha || '')) ? a.ficha : null,
+    fechaInspeccion: /^\d{4}-\d{2}-\d{2}/.test(String(a.fechaInspeccion || '')) ? String(a.fechaInspeccion) : '',
+    publicado: txt(a.publicado, 40),
+  });
   let autos = null; // caché mientras dura la visita
   async function cargarAutos() {
     if (autos) return autos;
     const r = await fetch(`${FS}?pageSize=300&key=${FS_KEY}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    autos = (j.documents || []).map((d) => fsObj(d.fields || {}))
+    autos = (j.documents || []).map((d) => limpiarAuto(fsObj(d.fields || {})))
       .sort((a, b) => String(b.publicado || '').localeCompare(String(a.publicado || '')));
     return autos;
   }
