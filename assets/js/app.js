@@ -18,6 +18,15 @@
   const WA = '56935595554';
   const TEL = '+56 9 3559 5554';
   const IG = 'https://www.instagram.com/atlas.motors.cl/';
+  // Opiniones en Google (perfil "Atlas Motors Chile spa"). Se actualizan a mano.
+  // Revisado el 2026-11-18: 5,0 con 6 opiniones.
+  const GOOGLE = { nota: 5, opiniones: 6, url: 'https://www.google.com/maps?cid=15933301111320184842' };
+  const googleBadge = (cls = '') => `
+    <a class="g-rating ${cls}" href="${GOOGLE.url}" target="_blank" rel="noopener" aria-label="${GOOGLE.nota.toLocaleString('es-CL', { minimumFractionDigits: 1 })} de 5 estrellas en Google, ${GOOGLE.opiniones} opiniones">
+      <span class="g-rating__stars" style="--v:${(GOOGLE.nota / 5) * 100}%" aria-hidden="true"></span>
+      <b>${GOOGLE.nota.toLocaleString('es-CL', { minimumFractionDigits: 1 })}</b>
+      <span>${GOOGLE.opiniones} opiniones en Google</span>
+    </a>`;
   const waLink = (msg) => `https://wa.me/${WA}${msg ? '?text=' + encodeURIComponent(msg) : ''}`;
 
   const ICONS = {
@@ -45,6 +54,8 @@
     phone: '<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2Z"/>',
     chat: '<path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.1-4.6A8 8 0 1 1 21 12Z"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+    heart: '<path d="M12 20.5S3 15.2 3 9.2A4.7 4.7 0 0 1 12 6.6a4.7 4.7 0 0 1 9 2.6c0 6-9 11.3-9 11.3Z"/>',
+    link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/>',
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/>',
     eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 14 4-5"/>',
@@ -83,36 +94,36 @@
   const scannerArt = () => `
     <svg viewBox="0 0 600 460" role="img" aria-label="Escáner automotriz conectado al puerto OBD">
       <defs>
-        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f8e6a6"/><stop offset=".45" stop-color="#d4a62a"/><stop offset="1" stop-color="#9c7310"/></linearGradient>
-        <linearGradient id="scr" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0e2c1d"/><stop offset="1" stop-color="#05120b"/></linearGradient>
-        <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d4a62a" stop-opacity=".35"/><stop offset="1" stop-color="#d4a62a" stop-opacity="0"/></radialGradient>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#cfe9d1"/><stop offset=".45" stop-color="#43a047"/><stop offset="1" stop-color="#2e7d32"/></linearGradient>
+        <linearGradient id="scr" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1b1f1c"/><stop offset="1" stop-color="#0f1110"/></linearGradient>
+        <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#43a047" stop-opacity=".35"/><stop offset="1" stop-color="#43a047" stop-opacity="0"/></radialGradient>
       </defs>
       <circle cx="300" cy="230" r="230" fill="url(#glow)"/>
-      <g opacity=".14" stroke="#f3d36b">
+      <g opacity=".14" stroke="#6cc472">
         ${Array.from({ length: 12 }, (_, i) => `<line x1="0" y1="${i * 40}" x2="600" y2="${i * 40}"/>`).join('')}
       </g>
       <!-- cable -->
       <path d="M300 395 C 300 440, 470 440, 510 400" stroke="#1a1f1c" stroke-width="14" fill="none" stroke-linecap="round"/>
       <path d="M300 395 C 300 440, 470 440, 510 400" stroke="url(#g)" stroke-width="3" fill="none" stroke-dasharray="4 10"/>
       <rect x="490" y="360" width="70" height="44" rx="8" fill="#1a1f1c" stroke="url(#g)" stroke-width="3"/>
-      <g fill="#d4a62a">${Array.from({ length: 8 }, (_, i) => `<rect x="${500 + i * 7}" y="372" width="3" height="8" rx="1"/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<rect x="${500 + i * 7}" y="386" width="3" height="8" rx="1"/>`).join('')}</g>
-      <text x="525" y="425" fill="#f3d36b" font-family="Inter" font-size="12" font-weight="700" text-anchor="middle">OBD-II</text>
+      <g fill="#43a047">${Array.from({ length: 8 }, (_, i) => `<rect x="${500 + i * 7}" y="372" width="3" height="8" rx="1"/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<rect x="${500 + i * 7}" y="386" width="3" height="8" rx="1"/>`).join('')}</g>
+      <text x="525" y="425" fill="#6cc472" font-family="Inter" font-size="12" font-weight="700" text-anchor="middle">OBD-II</text>
       <!-- device -->
       <rect x="180" y="40" width="240" height="370" rx="34" fill="#0b0f0c" stroke="url(#g)" stroke-width="5"/>
-      <rect x="204" y="70" width="192" height="190" rx="14" fill="url(#scr)" stroke="#24603f"/>
-      <text x="300" y="98" fill="#f3d36b" font-family="Cinzel" font-size="15" font-weight="700" text-anchor="middle" letter-spacing="2">ATLAS SCAN</text>
+      <rect x="204" y="70" width="192" height="190" rx="14" fill="url(#scr)" stroke="#343b36"/>
+      <text x="300" y="98" fill="#6cc472" font-family="Cinzel" font-size="15" font-weight="700" text-anchor="middle" letter-spacing="2">ATLAS SCAN</text>
       <!-- gauge -->
-      <path d="M240 190 A60 60 0 0 1 360 190" stroke="#1a4630" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <path d="M240 190 A60 60 0 0 1 360 190" stroke="#2a302c" stroke-width="12" fill="none" stroke-linecap="round"/>
       <path d="M240 190 A60 60 0 0 1 345 150" stroke="url(#g)" stroke-width="12" fill="none" stroke-linecap="round"/>
       <line x1="300" y1="190" x2="336" y2="150" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="300" cy="190" r="6" fill="#f3d36b"/>
+      <circle cx="300" cy="190" r="6" fill="#6cc472"/>
       <text x="300" y="222" fill="#fff" font-family="Inter" font-size="22" font-weight="800" text-anchor="middle">96/100</text>
       <text x="300" y="244" fill="#7fd1a2" font-family="Inter" font-size="11" font-weight="600" text-anchor="middle">● 0 CÓDIGOS DE FALLA</text>
       <!-- buttons -->
-      <circle cx="300" cy="320" r="34" fill="#113221" stroke="url(#g)" stroke-width="3"/>
+      <circle cx="300" cy="320" r="34" fill="#202522" stroke="url(#g)" stroke-width="3"/>
       <circle cx="300" cy="320" r="12" fill="url(#g)"/>
-      <rect x="216" y="300" width="34" height="14" rx="7" fill="#1a4630"/><rect x="216" y="326" width="34" height="14" rx="7" fill="#1a4630"/>
-      <rect x="350" y="300" width="34" height="14" rx="7" fill="#1a4630"/><rect x="350" y="326" width="34" height="14" rx="7" fill="#1a4630"/>
+      <rect x="216" y="300" width="34" height="14" rx="7" fill="#2a302c"/><rect x="216" y="326" width="34" height="14" rx="7" fill="#2a302c"/>
+      <rect x="350" y="300" width="34" height="14" rx="7" fill="#2a302c"/><rect x="350" y="326" width="34" height="14" rx="7" fill="#2a302c"/>
       <!-- chips -->
       <g font-family="Inter" font-size="12" font-weight="700">
         <rect x="24" y="92" width="150" height="40" rx="12" fill="#fff"/><circle cx="46" cy="112" r="8" fill="#1f8a4c"/><text x="60" y="116" fill="#1a1f1c">Motor OK</text>
@@ -122,8 +133,11 @@
       </g>
     </svg>`;
 
+  // Política del abono. PENDIENTE: confirmar con Matías antes de publicar.
+  const ABONO_POLITICA = 'Si avisas con al menos 24 horas de anticipación, cambiamos la fecha sin costo o te devolvemos el abono. Si después de la inspección vendes el auto con nosotros, el valor de la inspección se descuenta de lo que nos corresponde por la venta. Si nosotros no podemos ir, te devolvemos el 100 %. Con menos de 24 horas de aviso, el abono cubre el traslado y no se devuelve.';
   const FAQS = () => [
     ['¿Cuánto cuesta la inspección?', `La inspección completa vale ${clp(PLANES[0].precio)}. Reservas tu hora con el ${ABONO * 100} % de abono (${clp(PLANES[0].precio * ABONO)}) por transferencia y pagas el resto el día de la inspección.`],
+    ['¿Qué pasa con el abono si hay que cambiar la fecha?', ABONO_POLITICA],
     ['¿Tengo que estar presente?', 'No. Si no puedes ir, hacemos la inspección remota: grabamos todo, te mandamos cada hallazgo con foto por WhatsApp en el momento y después te explicamos el estado real del auto por llamada o audio.'],
     ['¿La inspección es un diagnóstico?', 'No. La inspección precompra busca que no te vendan un auto chocado, con fallas graves escondidas o con el kilometraje alterado. Un diagnóstico requiere el auto varias horas en taller.'],
     ['¿Qué recibo al final?', 'Un informe en PDF con el checklist de las 8 etapas, fotos de lo que encontramos y una idea de cuánto cuesta reparar cada detalle, para que negocies el precio con respaldo.'],
@@ -133,7 +147,7 @@
   const faq = () => `
     <section class="section">
       <div class="container faq-wrap">
-        <div><span class="eyebrow">Preguntas frecuentes</span><h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:var(--green-950);margin-top:10px">Lo que más nos preguntan</h2>
+        <div><span class="eyebrow">Preguntas frecuentes</span><h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:#fff;margin-top:10px">Lo que más nos preguntan</h2>
           <p style="color:var(--muted)">¿Tienes otra duda? Escríbenos y te respondemos al tiro.</p>
           <a class="btn btn--outline" href="${waLink('Hola Atlas Motors, tengo una consulta.')}" target="_blank" rel="noopener">${ic('chat')} Preguntar por WhatsApp</a>
         </div>
@@ -156,6 +170,7 @@
             <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar inspección</a>
             <a href="${waLink('Hola Atlas Motors, quiero agendar una inspección precompra.')}" target="_blank" rel="noopener" class="btn btn--ghost btn--lg">${ic('chat')} Escríbenos por WhatsApp</a>
           </div>
+          ${googleBadge()}
           <div class="hero__stats">
             <div><b>8</b><span>etapas de revisión</span></div>
             <div><b>${clp(completa.precio)}</b><span>inspección completa</span></div>
@@ -218,7 +233,7 @@
     <section class="section--tight">
       <div class="container">
         <div class="mascot">
-          <div class="mascot__img"><img src="assets/img/mascota.jpg" alt="Águila mascota de Atlas Motors con overol de mecánico levantando el pulgar" loading="lazy"></div>
+          <div class="mascot__img"><img src="assets/img/aguila.png" alt="Águila mascota de Atlas Motors con overol de mecánico levantando el pulgar" loading="lazy" width="403" height="640"></div>
           <div style="position:relative;z-index:1">
             <span class="bubble">¡Hola! ¿Te ayudo? 👋</span>
             <h2>Soy el ojo de águila de Atlas</h2>
@@ -249,8 +264,8 @@
     <section class="section">
       <div class="container">
         <div class="cta-band">
-          <div><span class="eyebrow">Próximamente</span><h2>Marketplace de autos inspeccionados</h2><p>Muy pronto podrás comprar autos que ya pasaron por la inspección de Atlas, con su informe a la vista.</p></div>
-          <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar inspección</a>
+          <div><span class="eyebrow">Autos en venta</span><h2>Autos que ya pasaron nuestra inspección</h2><p>Compra con el informe a la vista: puntaje, puntos a considerar y ficha para descargar. ¿Vas a vender el tuyo? Lo inspeccionamos y lo publicamos aquí.</p></div>
+          <a href="#/autos" class="btn btn--gold btn--lg">${ic('arrow')} Ver autos en venta</a>
         </div>
       </div>
     </section>`;
@@ -308,27 +323,163 @@
     return autos;
   }
   const nombreAuto = (a) => [a.marca, a.modelo, a.anio].filter(Boolean).join(' ');
+
+  /* ---------------- favoritos (solo en este navegador, sin cuenta) ---------------- */
+  const FAV_KEY = 'atlas-favoritos';
+  const leerFavs = () => {
+    try { const v = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.length <= 64).slice(0, 200) : []; } catch (e) { return []; }
+  };
+  const toggleFav = (id) => {
+    const f = leerFavs(); const i = f.indexOf(id);
+    if (i >= 0) f.splice(i, 1); else f.unshift(id);
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(f)); } catch (e) { /* modo privado: no se guarda */ }
+    return i < 0;
+  };
+  const favBtn = (id, cls = '') => {
+    const on = leerFavs().includes(id);
+    return `<button type="button" class="fav ${cls}${on ? ' on' : ''}" data-fav="${esc(id)}" aria-pressed="${on}" aria-label="${on ? 'Quitar de favoritos' : 'Guardar en favoritos'}">${ic('heart')}<span>${on ? 'Guardado' : 'Guardar'}</span></button>`;
+  };
+
+  /* ---------------- compartir un auto ---------------- */
+  const SITIO = 'https://www.atlasmotors.cl';
+  const enlaceAuto = (a) => `${SITIO}/#/auto/${encodeURIComponent(a.id)}`;
+  const textoCompartir = (a) => `Mira este auto inspeccionado por Atlas Motors: ${nombreAuto(a)}${a.precio ? ' · ' + clp(a.precio) : ''}${a.puntaje != null ? ' · puntaje ' + a.puntaje + '/100' : ''}\n${enlaceAuto(a)}`;
+
+  /* ---------------- avísame cuando llegue un auto así ---------------- */
+  const PRESUPUESTOS = [5, 8, 10, 12, 15, 20, 25, 30, 40, 50].map((m) => m * 1000000);
+  const avisameForm = (pref = {}) => {
+    const tope = pref.precio ? PRESUPUESTOS.find((p) => p >= pref.precio) || 0 : 0;
+    const anio = new Date().getFullYear();
+    return `
+    <form class="panel avisame" data-avisame novalidate>
+      <div class="avisame__head">
+        <span class="ic">${ic('bell')}</span>
+        <div><h3>${esc(pref.titulo || 'Avísame cuando llegue un auto así')}</h3>
+        <p>Cuéntanos qué buscas y te escribimos por WhatsApp cuando publiquemos uno parecido. Sin costo.</p></div>
+      </div>
+      <div class="avisame__grid">
+        <div class="field"><label for="avQue">Qué auto buscas *</label><input class="input" id="avQue" name="que" maxlength="80" placeholder="Ej: Toyota Hilux, SUV automático" value="${esc(pref.que || '')}"></div>
+        <div class="field"><label for="avPres">Presupuesto hasta</label><select class="select" id="avPres" name="presupuesto">
+          <option value="">Cualquiera</option>${PRESUPUESTOS.map((p) => `<option value="${p}"${p === tope ? ' selected' : ''}>${clp(p)}</option>`).join('')}<option value="mas">Más de ${clp(50000000)}</option></select></div>
+        <div class="field"><label for="avAnio">Año desde</label><select class="select" id="avAnio" name="anio">
+          <option value="">Cualquiera</option>${Array.from({ length: 16 }, (_, i) => anio - i).map((y) => `<option>${y}</option>`).join('')}</select></div>
+        <button class="btn btn--gold" type="submit">${ic('chat')} Avísame por WhatsApp</button>
+      </div>
+      <p class="avisame__nota">Se abre WhatsApp con tu pedido. <a href="#/privacidad">Cómo usamos tus datos</a>.</p>
+    </form>`;
+  };
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest('[data-avisame]'); if (!f) return;
+    e.preventDefault();
+    const que = f.que.value.trim();
+    if (!que) { f.que.focus(); toast('Cuéntanos qué auto buscas'); return; }
+    const pres = f.presupuesto.value === 'mas' ? `más de ${clp(50000000)}` : f.presupuesto.value ? clp(+f.presupuesto.value) : 'cualquiera';
+    const msg = `Hola Atlas Motors, avísenme cuando publiquen un auto así:\n• Busco: ${que}\n• Presupuesto hasta: ${pres}\n• Año desde: ${f.anio.value || 'cualquiera'}`;
+    sumar(['avisame_enviado']);
+    window.open(waLink(msg), '_blank', 'noopener');
+    toast('¡Listo! Envía el mensaje en WhatsApp y te avisamos.');
+  });
+
+  /* ---------------- estadísticas anónimas ---------------- */
+  // Cuenta visitas y clics sin cookies ni datos personales: cada evento suma 1 a un
+  // contador del día (estadisticas/AAAA-MM-DD en Firestore). No se guarda IP, navegador
+  // ni ningún identificador de la persona. Las reglas solo permiten sumar de a 1.
+  // En el navegador queda solo la fecha de la primera y la última visita (para
+  // distinguir visitantes nuevos de los que vuelven).
+  const STATS_URL = `https://firestore.googleapis.com/v1/projects/atlas-motors-cl/databases/(default)/documents:commit?key=${FS_KEY}`;
+  const STATS_DOC = 'projects/atlas-motors-cl/databases/(default)/documents/estadisticas/';
+  const hoyCL = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Santiago' });
+  const claveAuto = (id) => String(id).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
+  const SIN_STATS = !/(^|\.)atlasmotors\.cl$/.test(location.hostname) || navigator.webdriver; // ni pruebas locales ni robots
+  function sumar(claves) {
+    const ks = [...new Set(claves)].filter((k) => /^[a-z0-9_]{1,60}$/.test(k)).slice(0, 4);
+    if (!ks.length) return;
+    if (SIN_STATS) { if (window.ATLAS_DEBUG_STATS) console.info('[estadísticas]', ks.join(', ')); return; }
+    // `_k` declara qué contadores se suman (las reglas lo exigen); el resto son incrementos atómicos.
+    const body = JSON.stringify({ writes: [{
+      update: { name: STATS_DOC + hoyCL(), fields: { _k: { arrayValue: { values: ks.map((k) => ({ stringValue: k })) } } } },
+      updateMask: { fieldPaths: ['_k'] },
+      updateTransforms: ks.map((k) => ({ fieldPath: k, increment: { integerValue: '1' } })),
+    }] });
+    try { fetch(STATS_URL, { method: 'POST', body, keepalive: true, headers: { 'Content-Type': 'application/json' } }).catch(() => {}); } catch (e) { /* sin red: no se cuenta */ }
+  }
+  const AUTO_EV = { wa_auto: 'wa', compartir_wa: 'compartir', compartir_copiar: 'compartir', fav_agregar: 'fav', ficha: 'ficha' };
+  const evento = (ev, autoId) => sumar([ev, ...(autoId && AUTO_EV[ev] ? [`a_${claveAuto(autoId)}_${AUTO_EV[ev]}`] : [])]);
+  function contarVisita() {
+    const hoy = hoyCL(); let ultima = null, primera = null;
+    try { ultima = localStorage.getItem('atlas-ultima-visita'); primera = localStorage.getItem('atlas-primera-visita'); } catch (e) { /* sin almacenamiento */ }
+    if (ultima === hoy) return; // una vez por día y navegador
+    try { localStorage.setItem('atlas-ultima-visita', hoy); if (!primera) localStorage.setItem('atlas-primera-visita', hoy); } catch (e) { /* idem */ }
+    let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) { /* referrer raro */ }
+    const ua = navigator.userAgent;
+    const origen = /instagram/i.test(ref + ua) ? 'instagram' : /facebook|fban|fbav|fb\.me/i.test(ref + ua) ? 'facebook'
+      : /(^|\.)google\./.test(ref) ? 'google' : /whatsapp|wa\.me/i.test(ref + ua) ? 'whatsapp'
+      : !ref || ref === location.hostname ? 'directo' : 'otro';
+    sumar(['visitantes', primera ? 'visitantes_recurrentes' : 'visitantes_nuevos', `origen_${origen}`, matchMedia('(max-width: 720px)').matches ? 'disp_movil' : 'disp_escritorio']);
+  }
+  const PAGINAS = ['home', 'autos', 'auto', 'informe', 'inspeccion', 'agendar', 'busqueda', 'privacidad'];
+  const contarPagina = (parts) => {
+    const pg = parts[0] || 'home';
+    if (pg === 'auto' && parts[1]) sumar(['pv_auto', `a_${claveAuto(parts[1])}_vista`]);
+    else sumar([`pv_${PAGINAS.includes(pg) ? pg : 'otra'}`]);
+  };
+
+  // Clics: favoritos, copiar enlace y enlaces que interesan (WhatsApp, Instagram, Google, llamar).
+  document.addEventListener('click', (e) => {
+    const fav = e.target.closest('[data-fav]');
+    if (fav) {
+      e.preventDefault();
+      const id = fav.dataset.fav; const on = toggleFav(id);
+      $$(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => {
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+        b.setAttribute('aria-label', on ? 'Quitar de favoritos' : 'Guardar en favoritos');
+        const t = b.querySelector('span'); if (t) t.textContent = on ? 'Guardado' : 'Guardar';
+      });
+      if (pintarAutos) pintarAutos();
+      evento(on ? 'fav_agregar' : 'fav_quitar', id);
+      toast(on ? 'Guardado en tus favoritos (en este dispositivo)' : 'Quitado de tus favoritos');
+      return;
+    }
+    const cp = e.target.closest('[data-copiar]');
+    if (cp) {
+      const url = `${SITIO}/#/auto/${encodeURIComponent(cp.dataset.copiar)}`;
+      const ok = () => toast('Enlace copiado');
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(ok, () => window.prompt('Copia el enlace:', url));
+      else window.prompt('Copia el enlace:', url);
+      evento('compartir_copiar', cp.dataset.copiar);
+      return;
+    }
+    const a = e.target.closest('a[href]'); if (!a) return;
+    const href = a.getAttribute('href');
+    const ev = a.dataset.ev || (/wa\.me\//.test(href) ? 'wa' : /instagram\.com/.test(href) ? 'instagram'
+      : /^tel:/.test(href) ? 'llamar' : /google\.com\/maps/.test(href) ? 'google_opiniones' : '');
+    if (ev) evento(ev, a.dataset.auto);
+  });
   const nivelCls = ['ok', 'obs', 'fail'];
   const fechaISO = (ts) => (ts ? fecha(String(ts).slice(0, 10)) : '');
 
   const autoCard = (a) => `
+    <div class="car-card-wrap">
+    ${favBtn(a.id, 'fav--card')}
     <a class="car-card" href="#/auto/${esc(a.id)}">
       <div class="car-card__media">
         ${a.fotos && a.fotos[0] ? `<img src="${esc(a.fotos[0])}" alt="${esc(nombreAuto(a))}" loading="lazy">` : ''}
-        <span class="seal"><img src="assets/img/logo-shield.png" alt="">Inspeccionado</span>
-        ${a.puntaje != null ? `<span class="score">${a.puntaje}/100</span>` : ''}
+        <span class="seal">${ic('check')} Inspeccionado</span>
+        ${a.puntaje != null ? `<span class="score" aria-label="Puntaje ${a.puntaje} de 100">${a.puntaje}<small>de 100</small></span>` : ''}
         ${(a.fotos && a.fotos.length > 1) || (a.videos || []).length ? `<span class="count">${a.fotos.length > 1 ? `${ic('camera')} ${a.fotos.length}` : ''}${(a.videos || []).length ? `${ic('video')} ${a.videos.length}` : ''}</span>` : ''}
       </div>
       <div class="car-card__body">
         <h3 class="car-card__title">${esc(nombreAuto(a))}</h3>
+        <div class="car-card__specs">${[a.km != null ? km(a.km) : '', a.transmision, a.combustible].filter(Boolean).map((x) => esc(x)).join('<i>|</i>')}</div>
+        ${a.comuna ? `<span class="car-card__loc">${ic('pin')} ${esc(a.comuna)}</span>` : ''}
         ${a.recomendacion ? `<div><span class="status status--${nivelCls[a.nivel] || 'ok'}">${esc(a.recomendacion)}</span></div>` : ''}
-        <div class="car-card__specs">${[a.km != null ? km(a.km) : '', a.transmision, a.combustible].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('')}</div>
         <div class="car-card__foot">
           <span class="price">${a.precio ? clp(a.precio) : 'Consultar'}</span>
-          ${a.comuna ? `<span class="car-card__loc">${ic('pin')} ${esc(a.comuna)}</span>` : ''}
+          <span class="btn btn--outline btn--sm">Ver detalles</span>
         </div>
       </div>
-    </a>`;
+    </a>
+    </div>`;
 
   function viewAutos() {
     return `
@@ -340,7 +491,14 @@
       </div>
     </section>
     <section class="section section--tight">
-      <div class="container"><div id="autos" class="grid grid--cars"><p style="color:var(--muted)">Cargando autos…</p></div></div>
+      <div class="container">
+        <div class="toolbar" id="autosBar" hidden>
+          <span id="autosCount" style="color:var(--muted)"></span>
+          <button type="button" class="chip" id="soloFavs" aria-pressed="false">${ic('heart')} Mis favoritos <b id="favsN"></b></button>
+        </div>
+        <div id="autos" class="grid grid--cars"><p style="color:var(--muted)">Cargando autos…</p></div>
+        <div style="margin-top:36px">${avisameForm()}</div>
+      </div>
     </section>`;
   }
 
@@ -357,12 +515,27 @@
       </div>
     </div>`;
 
+  let pintarAutos = null; // vuelve a pintar el listado (al cambiar favoritos)
   async function bindAutos() {
     const box = $('#autos');
     try {
       const list = await cargarAutos();
       if (!document.body.contains(box)) return;
-      box.innerHTML = list.length ? list.map(autoCard).join('') : sinAutos();
+      let soloFavs = false;
+      const btn = $('#soloFavs');
+      pintarAutos = () => {
+        if (!document.body.contains(box)) return;
+        const favs = leerFavs();
+        const vis = soloFavs ? list.filter((a) => favs.includes(a.id)) : list;
+        $('#favsN').textContent = favs.filter((id) => list.some((a) => a.id === id)).length || '';
+        btn.classList.toggle('on', soloFavs); btn.setAttribute('aria-pressed', soloFavs);
+        $('#autosCount').textContent = `${vis.length} ${vis.length === 1 ? 'auto' : 'autos'}${soloFavs ? ' guardados' : ' publicados'}`;
+        box.innerHTML = vis.length ? vis.map(autoCard).join('')
+          : soloFavs ? `<div class="empty" style="grid-column:1/-1">Aún no guardas autos. Toca el ${ic('heart')} de un auto para tenerlo a mano aquí.</div>` : sinAutos();
+      };
+      $('#autosBar').hidden = !list.length;
+      btn.addEventListener('click', () => { soloFavs = !soloFavs; pintarAutos(); });
+      pintarAutos();
     } catch (e) {
       if (document.body.contains(box)) box.innerHTML = `<div class="empty" style="grid-column:1/-1">No pudimos cargar los autos. Revisa tu conexión y vuelve a intentar.</div>`;
     }
@@ -420,6 +593,7 @@
           </div>` : ''}
 
           ${a.descripcion ? `<div class="panel"><h3>Descripción del vendedor</h3><p style="color:var(--muted);margin:0;white-space:pre-line">${esc(a.descripcion)}</p></div>` : ''}
+          <div class="detail__avisame" style="margin-top:20px">${avisameForm({ que: [a.marca, a.modelo].filter(Boolean).join(' '), precio: a.precio, titulo: '¿No es exactamente lo que buscas?' })}</div>
         </div>
 
         <aside>
@@ -434,13 +608,18 @@
               ${a.transmision ? `<div class="spec">${ic('gear')}<div><small>Transmisión</small><b>${esc(a.transmision)}</b></div></div>` : ''}
               ${a.combustible ? `<div class="spec">${ic('fuel')}<div><small>Combustible</small><b>${esc(a.combustible)}</b></div></div>` : ''}
             </div>
+            <div class="contact-actions">
+              <a class="btn btn--green btn--block btn--lg" href="${waLink(msg)}" target="_blank" rel="noopener" data-ev="wa_auto" data-auto="${esc(a.id)}">${ic('chat')} Me interesa: escribir por WhatsApp</a>
+            </div>
+            <div class="share-row">
+              ${favBtn(a.id, 'share-row__btn')}
+              <a class="share-row__btn" href="https://wa.me/?text=${encodeURIComponent(textoCompartir(a))}" target="_blank" rel="noopener" data-ev="compartir_wa" data-auto="${esc(a.id)}">${ic('chat')}<span>Enviar a alguien</span></a>
+              <button type="button" class="share-row__btn" data-copiar="${esc(a.id)}">${ic('link')}<span>Copiar enlace</span></button>
+            </div>
             <div class="verified">
               ${a.puntaje != null ? `<div class="ring" style="--v:${a.puntaje}"><div>${a.puntaje}<small>de 100</small></div></div>` : '<span></span>'}
               <div><h3>${esc(a.recomendacion || 'Ficha de inspección')}</h3><p>Inspección realizada el ${fechaISO(a.fechaInspeccion)}: carrocería, motor, parte baja, interior, escáner y prueba de ruta.</p></div>
-              ${a.ficha ? `<a class="btn btn--gold" href="${esc(a.ficha)}" target="_blank" rel="noopener">${ic('download')} Descargar ficha de inspección</a>` : ''}
-            </div>
-            <div class="contact-actions">
-              <a class="btn btn--green btn--block" href="${waLink(msg)}" target="_blank" rel="noopener">${ic('chat')} Me interesa: escribir por WhatsApp</a>
+              ${a.ficha ? `<a class="btn btn--gold" href="${esc(a.ficha)}" target="_blank" rel="noopener" data-ev="ficha" data-auto="${esc(a.id)}">${ic('download')} Descargar ficha de inspección</a>` : ''}
             </div>
             <p style="color:var(--muted);font-size:12.5px;margin:14px 0 0">El precio y la descripción son del vendedor. La ficha refleja el estado del auto el día de la inspección.</p>
           </div>
@@ -468,6 +647,7 @@
     const draw = () => {
       $$('.gallery__thumbs button[data-i]').forEach((b) => b.classList.toggle('on', +b.dataset.i === idx));
       stage.innerHTML = `<div class="gallery__main"><img src="${esc(fotos[idx])}" alt="${esc(nombreAuto(a))}, foto ${idx + 1}">
+        <span class="seal">${ic('check')} Inspeccionado</span>
         ${fotos.length > 1 ? `<button class="gallery__nav gallery__nav--prev" data-nav="-1" aria-label="Anterior">${ic('left')}</button>
         <button class="gallery__nav gallery__nav--next" data-nav="1" aria-label="Siguiente">${ic('right')}</button>` : ''}</div>`;
     };
@@ -585,7 +765,7 @@
         <div class="scanner-art">${scannerArt()}</div>
         <div>
           <span class="eyebrow">¿Qué es?</span>
-          <h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:var(--green-950);margin-top:10px">Una revisión profesional antes de que pongas tu plata</h2>
+          <h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:#fff;margin-top:10px">Una revisión profesional antes de que pongas tu plata</h2>
           <p>Revisamos el vehículo en el mismo orden, siempre: carrocería 360° con <b>medidor de pintura</b>, estructura y chasis, motor, parte baja, interior, <b>escáner</b> y <b>prueba de ruta</b>. Multimarca, bencineros, diésel y alta gama.</p>
           <p>Te decimos el estado real del auto. Si tiene detalles menores, te damos <b>una idea de cuánto cuesta repararlos</b> para que negocies el precio con respaldo. Si tiene fallas graves, te lo decimos claro: no te lo recomendamos.</p>
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px">
@@ -618,7 +798,7 @@
       <div class="container split" style="align-items:start">
         <div>
           <span class="eyebrow">Inspección remota</span>
-          <h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:var(--green-950);margin-top:10px">¿No puedes estar presente? Igual lo ves todo</h2>
+          <h2 class="display" style="font-size:clamp(26px,3.4vw,38px);color:#fff;margin-top:10px">¿No puedes estar presente? Igual lo ves todo</h2>
           <p>Muchos autos están en otra comuna o en una automotora en horario de oficina. Para eso inventamos la inspección remota.</p>
         </div>
         <div class="remote-steps">
@@ -686,7 +866,7 @@
       '',
       `Vehículo: ${d.vehiculo}`,
       `Vendedor: ${d.donde}`,
-      `Día y hora: ${diaLargo(booking.date)}, ${booking.time}`,
+      `Día y hora que prefiero: ${diaLargo(booking.date)}, ${booking.time}`,
       `Lugar: ${[d.direccion, d.comuna].filter(Boolean).join(', ')}`,
       `Modalidad: ${d.presente === 'no' ? 'remota (no estaré presente)' : 'presencial'}`,
       d.link ? `Publicación: ${d.link}` : '',
@@ -703,7 +883,7 @@
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / <a href="#/inspeccion">Inspección precompra</a> / Agendar</div>
         <h1>Agenda tu inspección</h1>
-        <p>Elige el día y la hora, cuéntanos del auto y te confirmamos por WhatsApp. Reservas con el ${ABONO * 100} % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
+        <p>Elige el día y la hora que te acomodan, cuéntanos del auto y te confirmamos disponibilidad por WhatsApp. Reservas con el ${ABONO * 100} % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
       </div>
     </section>
     <section class="section--tight" style="padding-bottom:88px">
@@ -731,14 +911,14 @@
           cells += `<button type="button" data-date="${iso(dt)}" ${dis ? 'disabled' : ''} class="${booking.date === iso(dt) ? 'on' : ''} ${+dt === +today ? 'today' : ''}">${d}</button>`;
         }
         return `
-          <h3>¿Qué día y a qué hora?</h3>
+          <h3>¿Qué día y hora te acomodan?</h3>
           <div class="cal">
             <div class="cal__head"><button type="button" data-month="-1" aria-label="Mes anterior">${ic('left')}</button><b>${label}</b><button type="button" data-month="1" aria-label="Mes siguiente">${ic('right')}</button></div>
             <div class="cal__grid">${cells}</div>
           </div>
           ${booking.date ? `<p style="margin:18px 0 0;font-weight:600">Hora preferida para el ${diaLargo(booking.date)}</p>
           <div class="slots">${SLOTS.map((s) => `<button type="button" class="slot ${booking.time === s ? 'on' : ''}" data-time="${s}">${s}</button>`).join('')}</div>
-          <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Te confirmamos la disponibilidad por WhatsApp.</p>` : '<p style="margin:16px 0 0;color:var(--muted)">Selecciona un día. Atendemos de lunes a sábado.</p>'}`;
+          <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Es tu preferencia, no una reserva: te confirmamos la hora por WhatsApp según la agenda del día.</p>` : '<p style="margin:16px 0 0;color:var(--muted)">Selecciona un día. Atendemos de lunes a sábado.</p>'}`;
       }
       if (booking.step === 1) {
         const d = booking.data; const v = (k) => esc(d[k] || '');
@@ -760,8 +940,8 @@
         <h3>Envía tu solicitud</h3>
         <p style="color:var(--muted)">Se abrirá WhatsApp con tu solicitud lista para enviar. Te confirmamos la hora y te mandamos los datos de la cuenta empresa para el abono.</p>
         <div class="remote-steps" style="margin-top:16px">
-          <div class="remote-step"><span class="ic">${ic('chat')}</span><div><b>1. Envías el mensaje</b><p>Con el auto, el día y la hora que elegiste.</p></div></div>
-          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(plan.precio * ABONO)}</b><p>El ${ABONO * 100} % del servicio, para dejar la hora reservada.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('chat')}</span><div><b>1. Envías el mensaje</b><p>Con el auto y el día y hora que prefieres. Te confirmamos la hora.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(plan.precio * ABONO)}</b><p>El ${ABONO * 100} % del servicio, para dejar la hora reservada. ${ABONO_POLITICA}</p></div></div>
           <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>3. Inspeccionamos</b><p>El saldo de ${clp(plan.precio - plan.precio * ABONO)} se paga el día de la inspección.</p></div></div>
         </div>
         ${booking.sent ? `<p style="margin-top:16px;font-size:14px">¿No se abrió WhatsApp? <a href="${waLink(mensajeReserva())}" target="_blank" rel="noopener" style="color:var(--gold-700);font-weight:700">Toca aquí</a> o escríbenos al ${TEL}.</p>` : ''}`;
@@ -774,8 +954,8 @@
           <h3>Resumen</h3>
           <dl>
             <dt>Servicio</dt><dd>Inspección ${plan.nombre}</dd>
-            <dt>Día</dt><dd>${booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
-            <dt>Hora</dt><dd>${booking.time || '—'}</dd>
+            <dt>Día preferido</dt><dd>${booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
+            <dt>Hora preferida</dt><dd>${booking.time || '—'}</dd>
             <dt>Vehículo</dt><dd>${esc(d.vehiculo || '—')}</dd>
             <dt>Lugar</dt><dd>${esc([d.direccion, d.comuna].filter(Boolean).join(', ') || '—')}</dd>
             <dt>Modalidad</dt><dd>${d.presente === 'no' ? 'Remota' : 'Presencial'}</dd>
@@ -795,9 +975,10 @@
             <div class="wizard-nav">
               ${booking.step > 0 ? `<button type="button" class="btn btn--outline" data-go="-1">${ic('left')} Atrás</button>` : '<span></span>'}
               ${booking.step === 2
-                ? `<a class="btn btn--gold" data-action="send-booking" href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">${ic('chat')} Enviar por WhatsApp</a>`
+                ? `<a class="btn btn--gold" data-action="send-booking" data-ev="agendar_enviado" href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">${ic('chat')} Enviar por WhatsApp</a>`
                 : `<button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>Continuar ${ic('arrow')}</button>`}
             </div>
+            ${booking.step === 2 ? '<p style="font-size:12.5px;color:var(--muted);margin:14px 0 0;text-align:right">Tus datos se usan solo para coordinar la inspección. <a href="#/privacidad" style="text-decoration:underline">Política de privacidad</a>.</p>' : ''}
           </div>
           ${summary()}
         </div>`;
@@ -864,7 +1045,10 @@
           <span class="eyebrow">Solicitud</span>
           <h2 class="display" style="font-size:clamp(28px,3.6vw,42px);color:#fff;margin-top:10px">Envíanos lo que buscas</h2>
           <p style="color:#c7cfc9">Te contactamos para entender bien lo que necesitas.</p>
-          <div class="mascot__img" style="max-width:320px;margin-top:20px;border-radius:24px"><img src="assets/img/mascota.jpg" alt="Mascota de Atlas Motors" loading="lazy"></div>
+          <div class="mascot-side">
+            <img src="assets/img/aguila.png" alt="" loading="lazy" width="403" height="640">
+            <span class="bubble">¡Yo te lo encuentro! 🦅</span>
+          </div>
         </div>
         <form class="panel" id="searchForm" novalidate>
           <div class="form-grid">
@@ -884,7 +1068,7 @@
             <div class="field full"><label for="s-nota">¿Algo más que debamos saber?</label><textarea class="textarea" id="s-nota" name="nota" placeholder="Ej: necesito 4x4, uso en faena, color preferido…"></textarea></div>
           </div>
           <button class="btn btn--gold btn--lg btn--block" style="margin-top:18px" type="submit">${ic('chat')} Enviar por WhatsApp</button>
-          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0;text-align:center">Se abre WhatsApp con tu solicitud. Sin costo ni compromiso.</p>
+          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0;text-align:center">Se abre WhatsApp con tu solicitud. Sin costo ni compromiso. <a href="#/privacidad" style="text-decoration:underline">Cómo usamos tus datos</a>.</p>
         </form>
       </div>
     </section>`;
@@ -914,17 +1098,70 @@
         fd.email ? `Correo: ${fd.email}` : '',
       ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n').trim();
       const link = waLink(msg);
+      sumar(['busqueda_enviada']);
       window.open(link, '_blank', 'noopener');
       const nombre = esc(fd.nombre.trim().split(' ')[0]);
       f.innerHTML = `
         <div class="success" style="padding:20px 6px">
           <div class="check">${ic('check')}</div>
-          <h2 class="display" style="color:var(--green-950)">¡Gracias, ${nombre}!</h2>
+          <h2 class="display" style="color:#fff">¡Gracias, ${nombre}!</h2>
           <p style="color:var(--muted)">Abrimos WhatsApp con tu solicitud. Envía el mensaje y te contactamos para partir la búsqueda.</p>
           <a class="btn btn--gold" style="margin-top:12px" href="${link}" target="_blank" rel="noopener">${ic('chat')} Abrir WhatsApp de nuevo</a>
         </div>`;
       f.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
+  }
+
+  /* ---------------- política de privacidad ---------------- */
+  // Fuente: docs/politica-privacidad.md (mantener ambos textos iguales).
+  const PRIVACIDAD_FECHA = '18 de noviembre de 2026';
+  function viewPrivacidad() {
+    const correo = '<a href="mailto:servicios.atlasmotors@gmail.com">servicios.atlasmotors@gmail.com</a>';
+    return `
+    <section class="page-hero">
+      <div class="container">
+        <div class="crumbs"><a href="#/">Inicio</a> / Política de privacidad</div>
+        <h1>Política de privacidad</h1>
+        <p>Qué datos tratamos, para qué y cómo puedes ejercer tus derechos. Última actualización: ${PRIVACIDAD_FECHA}.</p>
+      </div>
+    </section>
+    <section class="section section--tight">
+      <div class="container legal">
+        <h2>1. Quiénes somos</h2>
+        <p>Atlas Motors Chile SpA (RUT 78.422.947-5, domicilio en Pasaje O’Higgins 2470A, La Serena, Región de Coquimbo) es responsable del tratamiento de los datos personales que se describen en esta política.</p>
+        <p>Contacto para temas de privacidad: ${correo}, WhatsApp <a href="${waLink()}" target="_blank" rel="noopener">${TEL}</a>.</p>
+
+        <h2>2. Qué datos tratamos y para qué</h2>
+        <p><b>Si agendas una inspección o pides una búsqueda.</b> El sitio web no guarda tus datos: el formulario arma un mensaje que tú envías por WhatsApp. Con ese mensaje recibimos tu nombre, teléfono, comuna y los datos del auto, y los usamos para coordinar y prestar el servicio.</p>
+        <p><b>Si inspeccionamos un auto para ti.</b> Registramos tu nombre y teléfono, los datos del vehículo (marca, modelo, año, patente y kilometraje), el lugar de la inspección, el resultado del checklist, comentarios, fotos y videos cortos del vehículo (con sonido, para registrar ruidos o fugas). Los usamos para hacer la inspección, preparar el informe y enviártelo, y para responder consultas o reclamos sobre el servicio.</p>
+        <p><b>Si publicas tu auto en nuestro sitio.</b> Publicamos solo los datos del vehículo, el precio, la comuna, las fotos y videos que elijas y el resumen de la inspección. <b>No publicamos tu nombre, teléfono ni la patente.</b> Los interesados nos escriben a nosotros. Solo publicamos con tu autorización y puedes pedir que lo quitemos en cualquier momento.</p>
+        <p><b>Si visitas atlasmotors.cl.</b> No usamos cookies ni herramientas de seguimiento de terceros. Para saber qué le sirve a la gente, contamos de forma anónima las visitas y algunos clics (por ejemplo, cuántas personas tocan WhatsApp o guardan un auto): solo sumamos totales por día, sin guardar tu IP ni nada que te identifique. Tu navegador guarda la fecha de tu primera y última visita (para distinguir visitas nuevas de las que vuelven) y los autos que marques como favoritos; eso queda solo en tu dispositivo y lo puedes borrar limpiando los datos del sitio. Nuestros proveedores de alojamiento (GitHub y Google) pueden registrar datos técnicos de la visita, como la dirección IP, para operar y proteger el servicio.</p>
+
+        <h2>3. Base para tratar tus datos</h2>
+        <p>Tratamos tus datos porque son necesarios para prestar el servicio que nos pides y, en el caso de la publicación de tu auto, porque nos das tu consentimiento. También podemos tratarlos para cumplir obligaciones legales, como las tributarias, y por nuestro interés legítimo en proteger la seguridad de nuestros sistemas y prevenir fraudes.</p>
+
+        <h2>4. Con quién compartimos tus datos</h2>
+        <p>No vendemos tus datos. Los compartimos solo con proveedores que nos ayudan a operar y que los tratan por encargo nuestro:</p>
+        <ul>
+          <li><b>Google (Firebase / Google Cloud):</b> almacenamiento de inspecciones, fotos y videos. Los servidores están en Chile (Santiago) y en Estados Unidos.</li>
+          <li><b>GitHub:</b> alojamiento del sitio web (no recibe datos de clientes).</li>
+          <li><b>WhatsApp (Meta):</b> comunicación contigo, cuando tú nos escribes.</li>
+        </ul>
+        <p>Algunos de estos proveedores están fuera de Chile. Trabajamos solo con proveedores que ofrecen garantías adecuadas de protección de datos, conforme a la ley.</p>
+
+        <h2>5. Cuánto tiempo guardamos los datos</h2>
+        <p>Guardamos los datos de las inspecciones por 2 años desde la inspección, para responder consultas o reclamos sobre el servicio, y luego los eliminamos. Las publicaciones de autos se eliminan cuando el auto se vende o cuando lo pides. Los respaldos de seguridad se borran automáticamente a las 8 semanas.</p>
+
+        <h2>6. Cómo protegemos tus datos</h2>
+        <p>Solo el equipo autorizado de Atlas Motors accede a los datos de clientes, con usuario y clave. Las conexiones son cifradas, aplicamos reglas de acceso en la base de datos y hacemos respaldos periódicos.</p>
+
+        <h2>7. Tus derechos</h2>
+        <p>Puedes pedirnos en cualquier momento <b>acceder</b> a tus datos, <b>rectificarlos</b>, <b>suprimirlos</b>, <b>oponerte</b> a su tratamiento, pedir su <b>portabilidad</b> o el <b>bloqueo</b> temporal, y retirar tu consentimiento para la publicación de tu auto. Escríbenos a ${correo} o por WhatsApp y te responderemos en un plazo de 30 días corridos. Si no quedas conforme, puedes recurrir a la Agencia de Protección de Datos Personales.</p>
+
+        <h2>8. Cambios a esta política</h2>
+        <p>Si cambiamos esta política, publicaremos la nueva versión en esta página con su fecha de actualización.</p>
+      </div>
+    </section>`;
   }
 
   function viewNotFound() {
@@ -937,7 +1174,7 @@
     const draw = () => {
       h.innerHTML = `
         ${open ? `<div class="helper__panel">
-          <header><img src="assets/img/mascota.jpg" alt=""><div><b>¿Te ayudo?</b><small>El ojo de águila de Atlas Motors</small></div></header>
+          <header><img src="assets/img/aguila-cara.png" alt=""><div><b>¿Te ayudo?</b><small>El ojo de águila de Atlas Motors</small></div></header>
           <div class="opts">
             <a href="#/agendar">${ic('calendar')} Quiero agendar una inspección</a>
             <a href="#/busqueda">${ic('target')} Búsquenme un auto</a>
@@ -945,7 +1182,7 @@
             <a href="${IG}" target="_blank" rel="noopener">${ic('instagram')} Ver nuestro Instagram</a>
           </div>
         </div>` : (sessionStorageSafe('hint') ? '' : '<div class="helper__hint">¿Te ayudo? 🦅</div>')}
-        <button class="helper__btn" aria-label="${open ? 'Cerrar ayuda' : 'Abrir ayuda'}" aria-expanded="${open}"><img src="assets/img/mascota.jpg" alt=""></button>`;
+        <button class="helper__btn" aria-label="${open ? 'Cerrar ayuda' : 'Abrir ayuda'}" aria-expanded="${open}"><img src="assets/img/aguila-cara.png" alt=""></button>`;
     };
     h.addEventListener('click', (e) => {
       if (e.target.closest('.helper__btn')) { open = !open; sessionStorageSafe('hint', '1'); draw(); }
@@ -964,6 +1201,8 @@
     const raw = location.hash.replace(/^#/, '') || '/';
     const [path] = raw.split('?');
     const parts = path.split('/').filter(Boolean);
+    pintarAutos = null;
+    contarPagina(parts);
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
       case undefined: html = viewHome(); break;
@@ -973,6 +1212,7 @@
       case 'inspeccion': html = viewInspeccion(); break;
       case 'agendar': html = viewAgendar(); bind = bindAgendar; break;
       case 'busqueda': html = viewBusqueda(); bind = bindBusqueda; break;
+      case 'privacidad': html = viewPrivacidad(); break;
       default: html = viewNotFound();
     }
     const fresh = app.cloneNode(false); app.replaceWith(fresh); app = fresh;
@@ -983,7 +1223,7 @@
     bind && bind();
     document.body.classList.toggle('on-agendar', nav === 'agendar');
     reveal();
-    document.title = ({ home: 'Atlas Motors · Inspección precompra de vehículos en la Región de Coquimbo', autos: 'Autos en venta · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors' })[nav] || 'Atlas Motors';
+    document.title = ({ home: 'Atlas Motors · Inspección precompra de vehículos en la Región de Coquimbo', autos: 'Autos en venta · Atlas Motors', inspeccion: 'Inspección precompra · Atlas Motors', agendar: 'Agendar inspección · Atlas Motors', busqueda: 'Búsqueda personalizada · Atlas Motors', privacidad: 'Política de privacidad · Atlas Motors' })[nav] || 'Atlas Motors';
   }
 
   /* Aparición suave de las secciones al hacer scroll */
@@ -1009,5 +1249,7 @@
 
   window.addEventListener('hashchange', route);
   mountHelper();
+  contarVisita();
+  const gPie = $('#gFooter'); if (gPie) gPie.innerHTML = googleBadge();
   route();
 })();
