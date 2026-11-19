@@ -59,6 +59,37 @@ service cloud.firestore {
         && d.ficha is string && d.ficha.matches(storage);
     }
 
+    // Estadísticas anónimas de atlasmotors.cl: un documento por día (AAAA-MM-DD)
+    // con contadores. Cada escritura de la web declara en `_k` qué contadores
+    // suma (1 a 4) y solo puede subir cada uno en 1: no puede leer, borrar ni
+    // poner otros valores. Lee solo el equipo.
+    match /estadisticas/{dia} {
+      allow read: if esEquipo();
+      allow create: if diaValido(dia) && sumaDeAUno(request.resource.data.keys(), {});
+      allow update: if diaValido(dia) && sumaDeAUno(request.resource.data.diff(resource.data).affectedKeys(), resource.data);
+      allow delete: if false;
+    }
+
+    function diaValido(dia) {
+      return dia.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$');
+    }
+
+    function subeUno(k, antes) {
+      return k is string && k.matches('^[a-z0-9_]{1,60}$')
+        && request.resource.data[k] is int
+        && request.resource.data[k] == antes.get(k, 0) + 1;
+    }
+
+    function sumaDeAUno(cambiadas, antes) {
+      let ks = request.resource.data._k;
+      return ks is list && ks.size() >= 1 && ks.size() <= 4 && request.resource.data.size() <= 1500
+        && cambiadas.hasOnly(ks.concat(['_k']))
+        && subeUno(ks[0], antes)
+        && (ks.size() < 2 || subeUno(ks[1], antes))
+        && (ks.size() < 3 || subeUno(ks[2], antes))
+        && (ks.size() < 4 || subeUno(ks[3], antes));
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
