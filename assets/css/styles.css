@@ -395,6 +395,31 @@ p { margin: 0 0 1em; }
 .dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; font-size: 12px; font-weight: 800; }
 .dot--ok { background: var(--ok); } .dot--obs { background: var(--warn); } .dot--fail { background: var(--bad); }
 .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+/* Mapa de daños de la carrocería (ficha del auto) */
+.mapa-wrap { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: 24px; align-items: start; }
+.mapa { width: 100%; height: auto; display: block; }
+.me { stroke-linejoin: round; stroke-linecap: round; }
+.me--sombra { fill: rgba(0,0,0,.35); } .me--arco { fill: var(--surface); }
+.me--cuerpo, .me--panel { fill: #2c312e; stroke: #6a746f; stroke-width: .9; }
+.me--vidrio { fill: #1f2d36; stroke: #0e1110; stroke-width: 1.1; } .me--pilar { fill: #0e1110; }
+.me--faro { fill: #514629; stroke: #8a7a4a; stroke-width: .8; } .me--piloto { fill: #6e2c25; stroke: #a5544a; stroke-width: .8; }
+.me--parrilla { fill: #121413; } .me--clara { fill: none; stroke: #5a625d; stroke-width: .8; }
+.me--llanta { fill: #0b0c0c; } .me--rin { fill: #7b847f; stroke: #4a514d; stroke-width: .7; } .me--hueco { fill: #2a2f2c; } .me--maza { fill: #3a403c; }
+.me--borde { fill: none; stroke: #6a746f; stroke-width: .9; } .me--manilla { fill: #4a514d; stroke: #6a746f; stroke-width: .6; }
+.me--placa { fill: #d9dcda; } .me--piso { fill: #252a27; stroke: #4a514d; stroke-width: .6; }
+.me--linea, .me--a { fill: none; stroke: #4f5853; stroke-width: .7; }
+.me--n1 { fill: rgba(224,164,42,.32); stroke: #f0b84a; stroke-width: 1.8; }
+.me--n2 { fill: rgba(229,96,79,.34); stroke: #ff8b7c; stroke-width: 1.8; }
+.me--llanta.me--n1, .me--llanta.me--n2 { fill: #0b0c0c; stroke-width: 3; }
+.mapa-wrap--sin { grid-template-columns: 1fr; }
+.mz-t { fill: var(--muted); font-weight: 700; letter-spacing: .06em; }
+.mk circle { stroke: var(--surface); stroke-width: 2.5; } .mk text { fill: #fff; font-size: 10.5px; font-weight: 800; text-anchor: middle; }
+.mk--1 circle { fill: var(--warn); } .mk--2 circle { fill: var(--bad); }
+.mapa-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.mapa-lista li { display: flex; gap: 10px; align-items: start; font-size: 14.5px; }
+.mk-n { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; }
+.mk-n--1 { background: var(--warn); } .mk-n--2 { background: var(--bad); }
+@media (max-width: 560px) { .mapa-wrap { grid-template-columns: 1fr; } .mapa { max-width: 260px; margin: 0 auto; } }
 .cat { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; background: var(--surface-2); font-size: 14px; font-weight: 500; }
 .cat .icon { color: var(--green-700); }
 .cat em { margin-left: auto; font-style: normal; font-size: 12px; color: var(--ok); }
