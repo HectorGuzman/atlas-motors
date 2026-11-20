@@ -304,6 +304,12 @@
     conteo: { bien: num((a.conteo || {}).bien) || 0, obs: num((a.conteo || {}).obs) || 0, problema: num((a.conteo || {}).problema) || 0 },
     etapas: lista(a.etapas).map((e) => ({ titulo: txt((e || {}).titulo, 60), bien: num((e || {}).bien) || 0, obs: num((e || {}).obs) || 0, problema: num((e || {}).problema) || 0 })),
     hallazgos: lista(a.hallazgos).map((h) => ({ punto: txt((h || {}).punto, 120), etapa: txt((h || {}).etapa, 60), estado: txt((h || {}).estado, 60), nivel: num((h || {}).nivel, 0, 2) })),
+    tieneMapa: Array.isArray(a.danos),
+    danos: lista(a.danos).slice(0, 60).map((d) => ({
+      zona: txt((d || {}).zona, 40), pieza: txt((d || {}).pieza, 60), tipo: txt((d || {}).tipo, 40),
+      nivel: num((d || {}).nivel, 1, 2) || 1, x: num((d || {}).x, 0, 340) ?? -1, y: num((d || {}).y, 0, 700) ?? -1,
+    })),
+    mapa: limpiarMapa(a.mapa),
     fotos: lista(a.fotos).filter((u) => STORAGE_OK.test(String(u))).slice(0, 40),
     ficha: STORAGE_OK.test(String(a.ficha || '')) ? a.ficha : null,
     videos: lista(a.videos).filter((v) => v && STORAGE_OK.test(String(v.url))).slice(0, 4).map((v) => ({
@@ -545,6 +551,28 @@
     return `<section class="section--tight" style="padding-top:28px"><div class="container" id="auto"><p style="color:var(--muted)">Cargando…</p></div></section>`;
   }
 
+  // Mapa de daños de la carrocería: la app publica el dibujo ya hecho (trazos
+  // SVG por pieza, según el tipo de vehículo). Aquí solo se valida y se pinta.
+  const MAPA_ESTILOS = ['sombra', 'cuerpo', 'panel', 'vidrio', 'pilar', 'faro', 'piloto', 'parrilla', 'clara', 'llanta', 'rin', 'hueco', 'maza', 'arco', 'borde', 'manilla', 'placa', 'piso', 'linea'];
+  const limpiarMapa = (m) => {
+    if (!m || typeof m !== 'object' || !Array.isArray(m.p)) return null;
+    const p = m.p.slice(0, 300).filter((x) => x && /^[MLCZ0-9 .\-]{1,6000}$/.test(String(x.d)) && MAPA_ESTILOS.includes(x.e))
+      .map((x) => ({ d: String(x.d), e: x.e, z: /^[a-z_]{1,40}$/.test(String(x.z || '')) ? x.z : '', a: x.a === 1 }));
+    const t = lista(m.t).slice(0, 30).map((x) => ({ t: txt((x || {}).t, 30), x: num(Math.round((x || {}).x), 0, 340), y: num(Math.round((x || {}).y), 0, 700), a: ['i', 'c', 'd'].includes((x || {}).a) ? x.a : 'i', s: num(Math.round((x || {}).s), 5, 12) || 8 }))
+      .filter((x) => x.x != null && x.y != null);
+    return p.length ? { p, t, h: num(Math.round(m.h), 300, 700) || 566 } : null;
+  };
+  function mapaDanos(mapa, danos) {
+    const grav = {};
+    danos.forEach((d) => { grav[d.zona] = Math.max(grav[d.zona] || 0, d.nivel); });
+    const anc = { i: 'start', c: 'middle', d: 'end' };
+    return `<svg class="mapa" viewBox="0 0 340 ${mapa.h}" role="img" aria-label="Mapa de daños de la carrocería">
+      ${mapa.p.map((x) => `<path d="${x.d}" class="me me--${x.e}${x.a ? ' me--a' : ''}${x.z && grav[x.z] ? ' me--n' + grav[x.z] : ''}"/>`).join('')}
+      ${mapa.t.map((x) => `<text x="${x.x}" y="${x.y + 3}" font-size="${x.s}" text-anchor="${anc[x.a]}" class="mz-t">${esc(x.t)}</text>`).join('')}
+      ${danos.map((d, i) => d.x > 0 ? `<g class="mk mk--${d.nivel}"><circle cx="${d.x}" cy="${d.y}" r="9"/><text x="${d.x}" y="${d.y + 3.5}">${i + 1}</text></g>` : '').join('')}
+    </svg>`;
+  }
+
   function autoHtml(a) {
     const fotos = a.fotos || [];
     const c = a.conteo || {};
@@ -584,6 +612,18 @@
               : `<p style="color:var(--muted);margin:0">El inspector no registró observaciones ni problemas.</p>`}
           </div>
 
+          ${a.tieneMapa && (a.mapa || a.danos.length) ? `
+          <div class="panel">
+            <h3>Estado de la carrocería</h3>
+            <div class="mapa-wrap${a.mapa ? '' : ' mapa-wrap--sin'}">
+              ${a.mapa ? mapaDanos(a.mapa, a.danos) : ''}
+              <div>
+                ${a.danos.length ? `<p style="color:var(--muted);margin:0 0 12px">Revisamos el auto pieza por pieza. Estos son los detalles que encontramos, marcados con su número en el dibujo:</p>
+                <ol class="mapa-lista">${a.danos.map((d, i) => `<li><span class="mk-n mk-n--${d.nivel}">${i + 1}</span><span><b>${esc(d.pieza)}</b>: ${esc(String(d.tipo).toLowerCase())} <small style="color:var(--muted)">· ${d.nivel === 2 ? 'importante' : 'detalle'}</small></span></li>`).join('')}</ol>`
+                : `<p style="margin:0"><b style="color:var(--accent-text)">Sin daños en la carrocería.</b></p><p style="color:var(--muted);margin:6px 0 0">Revisamos el auto pieza por pieza y no encontramos golpes, rayones ni repintados.</p>`}
+              </div>
+            </div>
+          </div>` : ''}
           ${(a.etapas || []).length ? `
           <div class="panel">
             <h3>Revisión por etapa</h3>
