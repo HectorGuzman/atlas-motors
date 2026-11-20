@@ -45,6 +45,14 @@ String mensajeResumen(Inspection i) {
       b.write('\n');
     }
     final total = i.costoTotal;
+    if (i.danos.isNotEmpty) {
+      b.write('\n*Carrocería* (ver mapa en el informe)');
+      for (final d in i.danos) {
+        b.write('\n• ${d.nombreZona}: ${d.nombreTipo.toLowerCase()}');
+        if (d.nota.trim().isNotEmpty) b.write(' — ${d.nota.trim()}');
+      }
+      b.write('\n');
+    }
     if (total != null) {
       b.write('\nReparaciones estimadas: *${clp(total)}* (referencial). Te sirve como respaldo para negociar el precio.');
     }
@@ -53,6 +61,22 @@ String mensajeResumen(Inspection i) {
   if (i.conclusion.trim().isNotEmpty) b.write('\n${i.conclusion.trim()}');
   b.write('\n\nEl informe completo en PDF va a continuación.');
   return b.toString();
+}
+
+/// Texto que acompaña al informe PDF cuando se le manda al cliente.
+String mensajeInforme(Inspection i) {
+  final nombre = i.cliente.trim().isEmpty ? '' : ' ${i.cliente.trim().split(RegExp(r'\s+')).first}';
+  final auto = [i.vehiculo, if (i.patente.isNotEmpty) 'patente ${i.patente}'].where((t) => t.isNotEmpty).join(', ');
+  return '¡Hola$nombre! 👋\n\n'
+      'Terminamos la inspección${auto.isEmpty ? '' : ' del *$auto*'} y nos da gusto enviarte el informe completo en PDF, '
+      'con el checklist, las fotos de lo que encontramos y nuestra recomendación.\n\n'
+      'Ojalá te ayude a tomar la mejor decisión para tu compra. Si tienes cualquier duda sobre el informe, '
+      'escríbenos por aquí y te la explicamos con gusto.\n\n'
+      'Gracias por confiar en Atlas Motors. Cuenta con nosotros para tus próximas compras, y si alguien '
+      'que conoces está buscando auto, ¡recomiéndanos! 🚗\n\n'
+      'Si te sirvió, tu opinión en Google nos ayuda mucho a seguir creciendo:\n'
+      'https://www.google.com/maps?cid=15933301111320184842\n\n'
+      '*Atlas Motors* · atlasmotors.cl';
 }
 
 /// Abre el menú de compartir del iPhone (WhatsApp, etc.).

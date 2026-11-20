@@ -1,29 +1,83 @@
-import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../checklist.dart';
+import '../danos.dart';
+import '../messages.dart';
 import '../store.dart';
-import '../theme.dart' show clp;
+import '../theme.dart' show clp, GoldButton;
 import 'videos.dart' show duracion, puntoDe;
 
-/// Vista previa del informe, con botón para compartir (WhatsApp, correo, etc.).
-class ReportScreen extends StatelessWidget {
+/// Vista previa del informe, con botón para mandarlo al cliente (WhatsApp,
+/// correo, etc.) junto con un mensaje de despedida.
+class ReportScreen extends StatefulWidget {
   final Inspection inspection;
   const ReportScreen({super.key, required this.inspection});
+  @override
+  State<ReportScreen> createState() => _ReportScreenState();
+}
+
+class _ReportScreenState extends State<ReportScreen> {
+  Inspection get inspection => widget.inspection;
+  late final Future<Uint8List> _pdf = buildReport(inspection);
+  bool _enviando = false;
+
+  String get _nombre => 'Informe ${inspection.vehiculo} ${inspection.patente}'.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  Future<void> _enviar(BuildContext bc) async {
+    setState(() => _enviando = true);
+    try {
+      final bytes = await _pdf;
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/${_nombre.replaceAll('/', '-')}.pdf');
+      await file.writeAsBytes(bytes);
+      final texto = mensajeInforme(inspection);
+      // Algunas apps (WhatsApp con documentos) no siempre muestran el texto:
+      // queda copiado para pegarlo si hace falta.
+      await Clipboard.setData(ClipboardData(text: texto));
+      if (!bc.mounted) return;
+      final box = bc.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+        text: texto,
+        files: [XFile(file.path, mimeType: 'application/pdf')],
+        sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('El mensaje quedó copiado: si WhatsApp no lo muestra junto al PDF, pégalo en el chat.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo preparar el informe: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final name = 'Informe ${inspection.vehiculo} ${inspection.patente}'.trim().replaceAll(RegExp(r'\s+'), ' ');
     final faltan = Store.I.fotosFaltantes(inspection);
     return Scaffold(
       appBar: AppBar(title: const Text('Informe')),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          child: Builder(
+            builder: (bc) => GoldButton(_enviando ? 'Preparando…' : 'Enviar informe al cliente',
+                icon: Icons.send_outlined, onPressed: _enviando ? null : () => _enviar(bc)),
+          ),
+        ),
+      ),
       body: Column(children: [
         if (faltan > 0)
           Container(
@@ -37,15 +91,18 @@ class ReportScreen extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF8A5A00), fontSize: 13),
             ),
           ),
-        Expanded(child: PdfPreview(
-        build: (_) => buildReport(inspection),
-        pdfFileName: '$name.pdf',
-        canChangePageFormat: false,
-        canChangeOrientation: false,
-        canDebug: false,
-        allowPrinting: false,
-        loadingWidget: const CircularProgressIndicator(),
-      )),
+        Expanded(
+          child: PdfPreview(
+            build: (_) => _pdf,
+            pdfFileName: '$_nombre.pdf',
+            canChangePageFormat: false,
+            canChangeOrientation: false,
+            canDebug: false,
+            allowPrinting: false,
+            allowSharing: false,
+            loadingWidget: const CircularProgressIndicator(),
+          ),
+        ),
       ]),
     );
   }
@@ -198,6 +255,192 @@ Future<List<pw.Widget>> _videosPdf(Inspection i, pw.Widget titulo, pw.Font bold)
   ];
 }
 
+/// Datos de la empresa que van en el encabezado de los PDF.
+const _empresa = [
+  'Atlas Motors Chile SpA',
+  'RUT 78.422.947-5',
+  'La Serena, Coquimbo',
+  '+56 9 3559 5554',
+  'servicios.atlasmotors@gmail.com',
+  'atlasmotors.cl',
+];
+
+/// Franja negra de arriba: logo y título del documento, y abajo los datos
+/// de la empresa en una línea.
+pw.Widget _encabezado(pw.MemoryImage logo, pw.Font bold, String titulo, List<String> lineas) => pw.Container(
+      padding: const pw.EdgeInsets.fromLTRB(16, 10, 16, 7),
+      decoration: const pw.BoxDecoration(color: PdfColors.black, border: pw.Border(bottom: pw.BorderSide(color: _gold, width: 3))),
+      child: pw.Column(children: [
+        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+          pw.Image(logo, height: 46),
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+            pw.Text(titulo, style: pw.TextStyle(font: bold, fontSize: 10.5, color: _gold300)),
+            pw.SizedBox(height: 3),
+            for (final l in lineas) pw.Text(l, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
+          ]),
+        ]),
+        pw.Container(
+          margin: const pw.EdgeInsets.only(top: 7),
+          padding: const pw.EdgeInsets.only(top: 5),
+          decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(color: PdfColors.grey800, width: .5))),
+          child: pw.Text(_empresa.join(' · '),
+              textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey400)),
+        ),
+      ]),
+    );
+
+/// El mapa de daños dibujado en el PDF, de [ancho] puntos de ancho.
+pw.Widget _mapaPdf(Mapa mapa, List<Dano> danos, double ancho, pw.Font bold) {
+  final k = ancho / mapaAncho;
+  final alto = mapaAlto * k;
+  final grav = gravedadPorZona(danos);
+
+  // El PDF mide desde abajo: se da vuelta el eje vertical.
+  void trazar(PdfGraphics g, Forma f) {
+    for (final (c, ps) in f.cmds) {
+      switch (c) {
+        case Cmd.m:
+          g.moveTo(ps[0].x * k, alto - ps[0].y * k);
+        case Cmd.l:
+          g.lineTo(ps[0].x * k, alto - ps[0].y * k);
+        case Cmd.c:
+          g.curveTo(ps[0].x * k, alto - ps[0].y * k, ps[1].x * k, alto - ps[1].y * k, ps[2].x * k, alto - ps[2].y * k);
+        case Cmd.z:
+          g.closePath();
+      }
+    }
+  }
+
+  pw.Widget texto(Texto t) {
+    const w = 120.0;
+    final left = switch (t.ancla) { 'c' => t.x * k - w / 2, 'd' => t.x * k - w, _ => t.x * k };
+    return pw.Positioned(
+      left: left,
+      top: t.y * k - t.tam * k * .7,
+      child: pw.SizedBox(
+        width: w,
+        child: pw.Text(t.t,
+            textAlign: switch (t.ancla) { 'c' => pw.TextAlign.center, 'd' => pw.TextAlign.right, _ => pw.TextAlign.left },
+            style: pw.TextStyle(font: bold, fontSize: t.tam * k, color: _muted, letterSpacing: .4)),
+      ),
+    );
+  }
+
+  final r = 8.5 * k;
+  return pw.SizedBox(
+    width: ancho,
+    height: alto,
+    child: pw.Stack(children: [
+      pw.CustomPaint(
+        size: PdfPoint(ancho, alto),
+        painter: (g, _) {
+          for (final p in mapa.piezas) {
+            final (fill, stroke, w) = estilos[p.estilo]!;
+            final s = p.zona == null ? null : grav[p.zona];
+            final rueda = p.estilo == 'llanta';
+            final relleno = p.forma.abierta ? null : (s != null && !rueda ? _sevBg[s] : (fill == null ? null : PdfColor.fromInt(fill)));
+            final borde = s != null ? _sev[s] : (stroke == null ? null : PdfColor.fromInt(stroke));
+            if (relleno != null) {
+              g.setFillColor(relleno);
+              trazar(g, p.forma);
+              g.fillPath();
+            }
+            if (borde != null) {
+              g
+                ..setStrokeColor(borde)
+                ..setLineWidth((s != null ? (rueda ? 3 : 1.8) : w) * k)
+                ..setLineCap(PdfLineCap.round)
+                ..setLineJoin(PdfLineJoin.round);
+              trazar(g, p.forma);
+              g.strokePath();
+            }
+          }
+          for (final d in danos) {
+            if (!d.ubicado) continue;
+            final cx = d.x * k, cy = alto - d.y * k;
+            g
+              ..setFillColor(PdfColors.white)
+              ..drawEllipse(cx, cy, r + 1.2, r + 1.2)
+              ..fillPath()
+              ..setFillColor(_sev[d.sev])
+              ..drawEllipse(cx, cy, r, r)
+              ..fillPath();
+          }
+        },
+      ),
+      for (final t in mapa.textos) texto(t),
+      for (final (n, d) in danos.indexed)
+        if (d.ubicado)
+          pw.Positioned(
+            left: d.x * k - r,
+            top: d.y * k - r,
+            child: pw.SizedBox(
+              width: r * 2,
+              height: r * 2,
+              child: pw.Center(
+                  child: pw.Text('${n + 1}', style: pw.TextStyle(font: bold, fontSize: 7.5, color: PdfColors.white))),
+            ),
+          ),
+    ]),
+  );
+}
+
+/// Sección del mapa de daños: el dibujo y, al lado, la lista numerada.
+List<pw.Widget> _seccionDanos(Inspection i, pw.Widget titulo, pw.Font bold, {double ancho = 230}) {
+  final danos = i.danos;
+  final mapa = mapaDe(i.carroceria);
+  pw.Widget fila(int n, Dano d) => pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 7),
+        child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Container(
+            width: 15,
+            height: 15,
+            alignment: pw.Alignment.center,
+            decoration: pw.BoxDecoration(color: _sev[d.sev], shape: pw.BoxShape.circle),
+            child: pw.Text('$n', style: pw.TextStyle(font: bold, fontSize: 7.5, color: PdfColors.white)),
+          ),
+          pw.SizedBox(width: 7),
+          pw.Expanded(
+            child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text(d.nombreZona, style: pw.TextStyle(font: bold, fontSize: 9.5)),
+              pw.Text('${d.nombreTipo} · ${gravedades[d.sev]}', style: pw.TextStyle(font: bold, fontSize: 8.5, color: _sev[d.sev])),
+              if (d.nota.trim().isNotEmpty) pw.Text(d.nota.trim(), style: const pw.TextStyle(fontSize: 8.5, color: _muted)),
+            ]),
+          ),
+        ]),
+      );
+  const alLado = 12;
+  final lista = <pw.Widget>[
+    if (tiposCarroceria[i.carroceria] != null)
+      pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 6),
+        child: pw.Text('Vehículo: ${tiposCarroceria[i.carroceria]!.$1}', style: pw.TextStyle(font: bold, fontSize: 9.5, color: _green)),
+      ),
+    if (danos.isEmpty)
+      pw.Text('No se encontraron daños en la carrocería durante la inspección visual 360°.',
+          style: pw.TextStyle(font: bold, fontSize: 10, color: _sev[0]))
+    else ...[
+      pw.Text('Piezas con daño, numeradas como en el dibujo. Ámbar: detalle; rojo: importante.',
+          style: const pw.TextStyle(fontSize: 8.5, color: _muted)),
+      pw.SizedBox(height: 8),
+      for (final (n, d) in danos.take(alLado).indexed) fila(n + 1, d),
+    ],
+  ];
+  return [
+    pw.Inseparable(
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        titulo,
+        pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          _mapaPdf(mapa, danos, ancho, bold),
+          pw.SizedBox(width: 18),
+          pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: lista)),
+        ]),
+      ]),
+    ),
+    for (final (n, d) in danos.skip(alLado).indexed) fila(n + alLado + 1, d),
+  ];
+}
+
 Future<Uint8List> buildReport(Inspection i) async {
   final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
   final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
@@ -212,6 +455,12 @@ Future<Uint8List> buildReport(Inspection i) async {
 
   // Fotos con su leyenda (sección y punto), reducidas para que el PDF sea liviano.
   final fotos = <(pw.MemoryImage, String)>[];
+  for (final (n, d) in i.danos.indexed) {
+    for (final f in d.fotos) {
+      final bytes = await fotoParaPdf(f);
+      if (bytes != null) fotos.add((pw.MemoryImage(bytes), 'Daño ${n + 1}: ${d.nombreZona} · ${d.nombreTipo}'));
+    }
+  }
   for (final s in checklist) {
     for (final it in s.items) {
       for (final f in i.results[it.id]?.fotos ?? const <String>[]) {
@@ -308,20 +557,7 @@ Future<Uint8List> buildReport(Inspection i) async {
       ]),
     ),
     build: (ctx) => [
-      // Encabezado
-      pw.Container(
-        padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: const pw.BoxDecoration(color: PdfColors.black, border: pw.Border(bottom: pw.BorderSide(color: _gold, width: 3))),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Image(logo, height: 46),
-          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-            pw.Text('INFORME DE INSPECCIÓN PRECOMPRA', style: pw.TextStyle(font: bold, fontSize: 10.5, color: _gold300)),
-            pw.SizedBox(height: 3),
-            pw.Text('Folio ${i.folio}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
-            pw.Text(fecha, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
-          ]),
-        ]),
-      ),
+      _encabezado(logo, bold, 'INFORME DE INSPECCIÓN PRECOMPRA', ['Folio ${i.folio}', fecha]),
       pw.SizedBox(height: 16),
 
       // Vehículo + puntaje
@@ -445,6 +681,9 @@ Future<Uint8List> buildReport(Inspection i) async {
           ),
       ],
 
+      if (i.danos.isNotEmpty || i.carroceria.isNotEmpty)
+        ..._seccionDanos(i, h2('Mapa de daños de carrocería'), bold),
+
       h2('Checklist de inspección'),
       for (final (n, s) in checklist.indexed) sectionTable(s, n + 1),
 
@@ -531,6 +770,8 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
     for (final s in checklist)
       for (final it in s.items)
         for (final f in i.results[it.id]?.fotos ?? const <String>[]) f: '${s.title}: ${it.label}',
+    for (final (n, d) in i.danos.indexed)
+      for (final f in d.fotos) f: 'Daño ${n + 1}: ${d.nombreZona} · ${d.nombreTipo}',
   };
   final fotos = <(pw.MemoryImage, String)>[];
   for (final f in v.fotos) {
@@ -582,18 +823,7 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
       ]),
     ),
     build: (ctx) => [
-      pw.Container(
-        padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: const pw.BoxDecoration(color: PdfColors.black, border: pw.Border(bottom: pw.BorderSide(color: _gold, width: 3))),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Image(logo, height: 46),
-          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-            pw.Text('FICHA DE INSPECCIÓN · AUTO EN VENTA', style: pw.TextStyle(font: bold, fontSize: 10.5, color: _gold300)),
-            pw.SizedBox(height: 3),
-            pw.Text('Inspeccionado el $fecha', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
-          ]),
-        ]),
-      ),
+      _encabezado(logo, bold, 'FICHA DE INSPECCIÓN · AUTO EN VENTA', ['Inspeccionado el $fecha']),
       pw.SizedBox(height: 16),
       pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
         pw.Expanded(
@@ -689,6 +919,8 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
               ),
           ],
         ),
+      if (i.danos.isNotEmpty || i.carroceria.isNotEmpty)
+        ..._seccionDanos(i, h2('Mapa de daños de carrocería'), bold),
       ..._fotosEnFilas(h2('Fotos'), fotos),
       h2('Sobre esta ficha'),
       pw.Container(

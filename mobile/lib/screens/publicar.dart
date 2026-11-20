@@ -63,6 +63,8 @@ class _PublicarScreenState extends State<PublicarScreen> {
       for (final s in checklist)
         for (final it in s.items)
           for (final f in i.results[it.id]?.fotos ?? const <String>[]) (f, it.label, _sevDe(it)),
+      for (final (n, d) in i.danos.indexed)
+        for (final f in d.fotos) (f, 'Daño ${n + 1}: ${d.nombreZona}', d.sev),
     ];
     final enChecklist = delChecklist.map((e) => e.$1).toSet();
     return [

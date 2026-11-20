@@ -6,6 +6,7 @@ import '../checklist.dart';
 import '../messages.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'danos.dart';
 import 'videos.dart';
 
 /// Puntos de una sección: estado con un toque, comentario, costo estimado y fotos.
@@ -59,6 +60,10 @@ class _SectionScreenState extends State<SectionScreen> {
             ),
           ],
           const SizedBox(height: 14),
+          if (s.id == 'carroceria') ...[
+            MapaDanosCard(inspection: i, onChanged: () => setState(() {})),
+            const SizedBox(height: 12),
+          ],
           for (final it in s.items) ...[
             _ItemCard(inspection: i, section: s, item: it, result: i.result(it.id), onChanged: () => setState(() {})),
             const SizedBox(height: 12),
@@ -112,37 +117,10 @@ class _ItemCardState extends State<_ItemCard> {
   }
 
   Future<void> _addPhoto() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      showDragHandle: true,
-      builder: (c) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Tomar foto'),
-              onTap: () => Navigator.pop(c, ImageSource.camera)),
-          ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Elegir de la galería'),
-              subtitle: const Text('Por ejemplo, una captura del video de los lentes'),
-              onTap: () => Navigator.pop(c, ImageSource.gallery)),
-          const SizedBox(height: 8),
-        ]),
-      ),
-    );
-    if (source == null) return;
-    try {
-      final x = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 75);
-      if (x == null) return;
-      r.fotos.add(await Store.I.addPhoto(x.path, widget.inspection));
-      _changed();
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(source == ImageSource.camera
-              ? 'No se pudo abrir la cámara (el simulador no tiene). Usa la galería.'
-              : 'No se pudo abrir la galería.')));
-    }
+    final f = await tomarFoto(context, widget.inspection);
+    if (f == null) return;
+    r.fotos.add(f);
+    _changed();
   }
 
   Future<void> _borrarFoto(String name) async {
@@ -161,7 +139,7 @@ class _ItemCardState extends State<_ItemCard> {
       ),
     );
     if (ok != true) return;
-    await Store.I.removePhoto(widget.inspection, r, name);
+    await Store.I.removePhoto(widget.inspection, r.fotos, name);
     widget.onChanged();
   }
 
@@ -337,5 +315,42 @@ class _ItemCardState extends State<_ItemCard> {
         ),
       ),
     );
+  }
+}
+
+/// Pide una foto (cámara o galería), la guarda en la inspección y devuelve su
+/// nombre (null si se canceló o falló).
+Future<String?> tomarFoto(BuildContext context, Inspection inspection) async {
+  final source = await showModalBottomSheet<ImageSource>(
+    context: context,
+    showDragHandle: true,
+    builder: (c) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(
+            leading: const Icon(Icons.photo_camera_outlined),
+            title: const Text('Tomar foto'),
+            onTap: () => Navigator.pop(c, ImageSource.camera)),
+        ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Elegir de la galería'),
+            subtitle: const Text('Por ejemplo, una captura del video de los lentes'),
+            onTap: () => Navigator.pop(c, ImageSource.gallery)),
+        const SizedBox(height: 8),
+      ]),
+    ),
+  );
+  if (source == null) return null;
+  try {
+    final x = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 75);
+    if (x == null) return null;
+    return await Store.I.addPhoto(x.path, inspection);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(source == ImageSource.camera
+              ? 'No se pudo abrir la cámara (el simulador no tiene). Usa la galería.'
+              : 'No se pudo abrir la galería.')));
+    }
+    return null;
   }
 }

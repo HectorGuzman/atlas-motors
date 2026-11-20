@@ -41,6 +41,7 @@ const fugas = [Opt('Sin fugas', 0), Opt('Humedad leve', 1), Opt('Con fuga', 2)];
 const ruido = [Opt('Sin ruidos', 0), Opt('Ruido leve', 1), Opt('Ruido anormal', 2)];
 const funciona = [Opt('Funciona', 0), Opt('Con detalle', 1), Opt('No funciona', 2)];
 const docs = [Opt('Al día', 0), Opt('Por vencer', 1), Opt('Vencido', 2)];
+const coincide = [Opt('Coincide', 0), Opt('No se pudo verificar', 1), Opt('No coincide', 2)];
 const dano = [Opt('Sin daño', 0), Opt('Dudoso', 1), Opt('Con daño', 2)];
 
 const checklist = <Section>[
@@ -71,11 +72,12 @@ const checklist = <Section>[
     Item('motor.freno_liq', 'Líquido de frenos', nivel),
     Item('motor.hidraulico', 'Líquido hidráulico de dirección', [...nivel, noAplica]),
     Item('motor.aceite_nivel', 'Nivel de aceite', nivel),
-    Item('motor.tapa_aceite', 'Tapa de aceite', [Opt('Limpia', 0), Opt('Residuo leve', 1), Opt('Mayonesa o borra', 2)],
+    Item('motor.tapa_aceite', 'Tapa de aceite', [Opt('Limpia', 0), Opt('Residuo leve', 1), Opt('Mayonesa o borra', 2), noAplica],
         ayuda: 'Con linterna, mirar hacia adentro si el motor lo permite.'),
     Item('motor.calentamiento', 'Señales de sobrecalentamiento', [Opt('Sin señales', 0), Opt('Dudoso', 1), Opt('Con señales', 2)]),
   ]),
-  Section('bajos', 'Parte baja y suspensión', 'Fugas, palieres, bandejas, fuelles, amortiguadores y neumáticos',
+  Section('bajos', 'Parte baja, suspensión y frenos',
+      'Fugas, palieres, bandejas, fuelles, amortiguadores, neumáticos, pastillas y discos',
       Icons.tire_repair_outlined, [
     Item('baj.fugas', 'Fugas por debajo', fugas),
     Item('baj.palieres', 'Palieres', estado),
@@ -86,16 +88,23 @@ const checklist = <Section>[
     Item('baj.amort_tras', 'Amortiguadores traseros', [Opt('Buenos', 0), Opt('Humedad', 1), Opt('Con fuga', 2)]),
     Item('baj.neumaticos', 'Neumáticos', [Opt('Buen desgaste', 0), Opt('Desgaste medio', 1), Opt('Para cambio', 2)],
         ayuda: 'Desgaste parejo o irregular (alineación).'),
+    Item('baj.pastillas', 'Pastillas de freno', [Opt('Buenas', 0), Opt('Desgaste medio', 1), Opt('Para cambio', 2)],
+        ayuda: 'A la vista, entre los rayos de la llanta. Anota cuánta vida les queda.'),
+    Item('baj.discos', 'Discos de freno', [Opt('Buenos', 0), Opt('Con ceja o desgaste', 1), Opt('Rayados o para cambio', 2)],
+        ayuda: 'Superficie pareja, sin ceja marcada ni surcos. Si atrás son tambores, anótalo.'),
   ]),
   Section('interior', 'Interior y electricidad', 'Cinturones, asientos, eléctrico, mandos y luces',
       Icons.airline_seat_recline_normal_outlined, [
     Item('int.cinturones', 'Cinturones', funciona),
     Item('int.asientos', 'Asientos y tapicería', estado),
-    Item('int.electrico', 'Alzavidrios, espejos y cierre', funciona),
-    Item('int.radio', 'Radio y multimedia', funciona),
-    Item('int.volante', 'Comandos al volante', funciona),
-    Item('int.parasoles', 'Parasoles y techo', estado),
-    Item('int.aire', 'Aire acondicionado y calefacción', funciona),
+    // int.electrico conserva su id para no perder lo ya inspeccionado.
+    Item('int.electrico', 'Alzavidrios eléctricos', [...funciona, noAplica]),
+    Item('int.espejos', 'Espejos eléctricos', [...funciona, noAplica]),
+    Item('int.cierre', 'Cierre centralizado y alarma', [...funciona, noAplica]),
+    Item('int.radio', 'Radio y multimedia', [...funciona, noAplica]),
+    Item('int.volante', 'Comandos al volante', [...funciona, noAplica]),
+    Item('int.parasoles', 'Parasoles y techo', [...estado, noAplica], ayuda: 'Incluye el sunroof si tiene.'),
+    Item('int.aire', 'Aire acondicionado y calefacción', [...funciona, noAplica]),
     Item('int.luces', 'Luces e intermitentes', funciona, ayuda: 'Mientras el escáner reconoce el auto: encender todas.'),
     Item('int.testigos', 'Testigos del tablero', [Opt('Sin testigos', 0), Opt('Testigo menor', 1), Opt('Testigos de falla', 2)]),
   ]),
@@ -119,7 +128,11 @@ const checklist = <Section>[
     Item('ruta.direccion', 'Dirección', estado),
     Item('ruta.4x4', 'Tracción 4x4', [...funciona, noAplica]),
   ]),
-  Section('documentos', 'Documentos', 'Si el vendedor los muestra', Icons.description_outlined, [
+  Section('documentos', 'Documentos', 'Papeles al día y números de motor y chasis', Icons.description_outlined, [
+    Item('doc.motor', 'N° de motor coincide con los papeles', coincide,
+        ayuda: 'Compara el número grabado en el motor con el padrón o el certificado de anotaciones.'),
+    Item('doc.chasis', 'N° de chasis (VIN) coincide con los papeles', coincide,
+        ayuda: 'Revisa el VIN del parabrisas, del pilar o del piso, y que el escáner muestre el mismo.'),
     Item('doc.permiso', 'Permiso de circulación', [...docs, noAplica]),
     Item('doc.revision', 'Revisión técnica', [...docs, noAplica]),
     Item('doc.soap', 'Seguro obligatorio (SOAP)', [...docs, noAplica]),

@@ -8,6 +8,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'checklist.dart';
+import 'danos.dart';
 import 'screens/report.dart' show buildFicha;
 import 'store.dart';
 
@@ -156,6 +157,13 @@ class Marketplace {
       'hallazgos': [
         for (final h in i.hallazgos) {'punto': h.item.label, 'etapa': h.section.title, 'estado': h.opt.label, 'nivel': h.opt.sev},
       ],
+      // Mapa de daños: pieza, tipo, gravedad y dónde se marcó (la web lo dibuja).
+      'danos': [
+        for (final d in i.danos.take(60))
+          {'zona': d.zona, 'pieza': d.nombreZona, 'tipo': d.nombreTipo, 'nivel': d.sev, 'x': d.x.round(), 'y': d.y.round()},
+      ],
+      // El dibujo listo (trazos SVG), para que la web lo muestre igual que la app.
+      if (i.carroceria.isNotEmpty || i.danos.isNotEmpty) 'mapa': mapaDe(i.carroceria).toJson(),
       'fotos': urls,
       'videos': videos,
       'ficha': ficha,

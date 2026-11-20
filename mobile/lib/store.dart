@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'checklist.dart';
+import 'danos.dart';
 import 'marketplace.dart';
 
 class ItemResult {
@@ -119,6 +120,8 @@ class Inspection {
   int modalidad; // índice en [modalidades]
   Map<String, ItemResult> results;
   List<Video> videos;
+  List<Dano> danos; // mapa de daños de la carrocería
+  String carroceria; // tipo de vehículo para el mapa (ver tiposCarroceria); vacío = sin elegir
   Venta? venta; // solo si el auto se va a vender en atlasmotors.cl
   DateTime actualizado; // último cambio, para decidir qué copia gana al sincronizar
 
@@ -140,10 +143,13 @@ class Inspection {
     this.modalidad = 0,
     Map<String, ItemResult>? results,
     List<Video>? videos,
+    List<Dano>? danos,
+    this.carroceria = '',
     this.venta,
     DateTime? actualizado,
   })  : results = results ?? {},
         videos = videos ?? [],
+        danos = danos ?? [],
         actualizado = actualizado ?? fecha;
 
   /// La inspección de ejemplo que trae la app (no se respalda ni se publica).
@@ -208,13 +214,15 @@ class Inspection {
             if (!e.value.isEmpty) e.key: e.value.toJson()
         },
         'videos': [for (final v in videos) v.toJson()],
+        'danos': [for (final d in danos) d.toJson()],
+        'carroceria': carroceria,
         if (venta != null) 'venta': venta!.toJson(),
       };
 
   /// Todas las fotos de la inspección: las de cada punto, las tomadas para la
   /// venta y las miniaturas de los videos.
   Iterable<String> get todasLasFotos =>
-      {...results.values.expand((r) => r.fotos), ...?venta?.fotos, for (final v in videos) if (v.miniatura.isNotEmpty) v.miniatura};
+      {...results.values.expand((r) => r.fotos), ...danos.expand((d) => d.fotos), ...?venta?.fotos, for (final v in videos) if (v.miniatura.isNotEmpty) v.miniatura};
 
   /// Videos asociados a un punto del checklist.
   List<Video> videosDe(String itemId) => [for (final v in videos) if (v.item == itemId) v];
@@ -229,6 +237,8 @@ class Inspection {
         results: (j['results'] as Map<String, dynamic>? ?? {})
             .map((k, v) => MapEntry(k, ItemResult.fromJson(Map<String, dynamic>.from(v)))),
         videos: [for (final v in (j['videos'] as List? ?? [])) Video.fromJson(Map<String, dynamic>.from(v))],
+        carroceria: j['carroceria'] ?? '',
+        danos: [for (final d in (j['danos'] as List? ?? [])) Dano.fromJson(Map<String, dynamic>.from(d))],
         venta: j['venta'] == null ? null : Venta.fromJson(Map<String, dynamic>.from(j['venta'])),
         actualizado: j['actualizado'] == null ? null : DateTime.parse(j['actualizado']),
       );
@@ -577,8 +587,8 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
     return name;
   }
 
-  Future<void> removePhoto(Inspection i, ItemResult r, String name) async {
-    r.fotos.remove(name);
+  Future<void> removePhoto(Inspection i, List<String> fotos, String name) async {
+    fotos.remove(name);
     i.venta?.fotos.remove(name);
     await _borrarFotoLocal(name);
     if (_porSubir.remove('${i.id}/$name')) await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
@@ -589,7 +599,7 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
   /// venta (no está en ningún punto del checklist), se borra del teléfono.
   Future<void> quitarFotoVenta(Inspection i, String name) async {
     i.venta?.fotos.remove(name);
-    if (!i.results.values.any((r) => r.fotos.contains(name))) {
+    if (!i.results.values.any((r) => r.fotos.contains(name)) && !i.danos.any((d) => d.fotos.contains(name))) {
       await _borrarFotoLocal(name);
       if (_porSubir.remove('${i.id}/$name')) await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
     }
