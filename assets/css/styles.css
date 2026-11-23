@@ -392,6 +392,7 @@ p { margin: 0 0 1em; }
 .verified .btn { grid-column: 1 / -1; }
 .obs-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .obs-list li { display: flex; gap: 10px; align-items: start; font-size: 14.5px; }
+.obs-list .corregido { display: block; margin-top: 3px; color: var(--ok); font-weight: 600; font-size: 13.5px; }
 .dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; font-size: 12px; font-weight: 800; }
 .dot--ok { background: var(--ok); } .dot--obs { background: var(--warn); } .dot--fail { background: var(--bad); }
 .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }

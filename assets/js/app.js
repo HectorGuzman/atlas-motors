@@ -293,6 +293,8 @@
     const n = typeof v === 'number' ? v : (typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : NaN);
     return Number.isFinite(n) && n >= min && n <= max ? Math.round(n) : null;
   };
+  const DIA = /^\d{4}-\d{2}-\d{2}/;
+  const diaCorto = (d) => fecha(String(d).slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' });
   const txt = (v, max = 3000) => (v == null ? '' : String(v).slice(0, max));
   const lista = (v) => (Array.isArray(v) ? v : []);
   const limpiarAuto = (a) => ({
@@ -303,7 +305,14 @@
     nivel: num(a.nivel, 0, 2),
     conteo: { bien: num((a.conteo || {}).bien) || 0, obs: num((a.conteo || {}).obs) || 0, problema: num((a.conteo || {}).problema) || 0 },
     etapas: lista(a.etapas).map((e) => ({ titulo: txt((e || {}).titulo, 60), bien: num((e || {}).bien) || 0, obs: num((e || {}).obs) || 0, problema: num((e || {}).problema) || 0 })),
-    hallazgos: lista(a.hallazgos).map((h) => ({ punto: txt((h || {}).punto, 120), etapa: txt((h || {}).etapa, 60), estado: txt((h || {}).estado, 60), nivel: num((h || {}).nivel, 0, 2) })),
+    hallazgos: lista(a.hallazgos).map((h) => ({
+      punto: txt((h || {}).punto, 120), etapa: txt((h || {}).etapa, 60), estado: txt((h || {}).estado, 60), nivel: num((h || {}).nivel, 0, 2),
+      corregido: h && h.corregido && DIA.test(String(h.corregido.fecha)) ? { fecha: String(h.corregido.fecha).slice(0, 10), texto: txt(h.corregido.texto, 300) } : null,
+    })),
+    // Trabajos hechos después de la inspección (las boletas no se publican).
+    actualizaciones: lista(a.actualizaciones).filter((u) => u && DIA.test(String(u.fecha))).slice(0, 40).map((u) => ({
+      fecha: String(u.fecha).slice(0, 10), punto: txt(u.punto, 120), texto: txt(u.texto, 300), respaldo: u.respaldo === true,
+    })),
     tieneMapa: Array.isArray(a.danos),
     danos: lista(a.danos).slice(0, 60).map((d) => ({
       zona: txt((d || {}).zona, 40), pieza: txt((d || {}).pieza, 60), tipo: txt((d || {}).tipo, 40),
@@ -608,9 +617,16 @@
               <span class="status status--fail">✕ ${c.problema || 0} con problema</span>
             </div>
             <h4 style="margin:0 0 10px">Puntos a considerar</h4>
-            ${hs.length ? `<ul class="obs-list">${hs.map((h) => `<li><span class="dot dot--${nivelCls[h.nivel] || 'obs'}">!</span><span><b>${esc(h.punto)}</b>: ${esc(String(h.estado).toLowerCase())} <small style="color:var(--muted)">· ${esc(h.etapa)}</small></span></li>`).join('')}</ul>`
+            ${hs.length ? `<ul class="obs-list">${hs.map((h) => `<li><span class="dot dot--${nivelCls[h.nivel] || 'obs'}">!</span><span><b>${esc(h.punto)}</b>: ${esc(String(h.estado).toLowerCase())} <small style="color:var(--muted)">· ${esc(h.etapa)}</small>${h.corregido ? `<span class="corregido">✓ Corregido el ${esc(diaCorto(h.corregido.fecha))}${h.corregido.texto ? `: ${esc(h.corregido.texto)}` : ''}</span>` : ''}</span></li>`).join('')}</ul>`
               : `<p style="color:var(--muted);margin:0">El inspector no registró observaciones ni problemas.</p>`}
           </div>
+
+          ${(a.actualizaciones || []).length ? `
+          <div class="panel">
+            <h3>Después de la inspección</h3>
+            <p style="color:var(--muted);margin:0 0 12px">Trabajos hechos al auto después de inspeccionarlo. El resultado original de la inspección se mantiene.</p>
+            <ul class="obs-list">${a.actualizaciones.map((u) => `<li><span class="dot dot--ok">✓</span><span><b>${esc(diaCorto(u.fecha))}</b>${u.punto ? ` · ${esc(u.punto)}` : ''}: ${esc(u.texto)}${u.respaldo ? ' <small style="color:var(--muted)">· con boleta revisada por Atlas Motors</small>' : ''}</span></li>`).join('')}</ul>
+          </div>` : ''}
 
           ${a.tieneMapa && (a.mapa || a.danos.length) ? `
           <div class="panel">
