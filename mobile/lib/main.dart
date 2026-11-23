@@ -10,7 +10,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'catalog.dart';
 import 'firebase_options.dart';
 import 'checklist.dart';
+import 'screens/actualizaciones.dart';
+import 'screens/garage.dart';
 import 'screens/home.dart';
+import 'screens/inicio.dart';
 import 'screens/inspection.dart';
 import 'screens/login.dart';
 import 'screens/report.dart';
@@ -51,7 +54,14 @@ class AtlasApp extends StatelessWidget {
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: _debugScreen() ?? ListenableBuilder(
         listenable: Store.I,
-        builder: (_, _) => Store.I.userEmail == null ? const LoginScreen() : const HomeScreen(),
+        builder: (_, _) {
+          final s = Store.I;
+          if (s.userEmail == null) return const LoginScreen();
+          if (s.esAdmin) return const InicioScreen();
+          if (s.esGarage) return const GarageScreen();
+          if (!s.rolCargado) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const SinAccesoScreen();
+        },
       ),
     );
   }
@@ -60,15 +70,25 @@ class AtlasApp extends StatelessWidget {
 /// Solo en modo debug: abre una pantalla directo para sacar capturas,
 /// con la variable de entorno ATLAS_SHOT (home, form, inspection, section, report).
 Widget? _debugScreen() {
-  final shot = kDebugMode ? Platform.environment['ATLAS_SHOT'] : null;
+  const definida = String.fromEnvironment('ATLAS_SHOT'); // flutter run --dart-define=ATLAS_SHOT=...
+  final shot = kDebugMode ? (Platform.environment['ATLAS_SHOT'] ?? (definida.isEmpty ? null : definida)) : null;
   if (shot == null) return null;
   Store.I.userEmail = 'matias@atlasmotors.cl';
+  Store.I.rol = 'admin';
   final i = Store.I.inspections.first;
   return switch (shot) {
     'form' => const VehicleFormScreen(),
     'inspection' => InspectionScreen(inspection: i),
     'section' => SectionScreen(inspection: i, section: checklist.first),
     'report' => ReportScreen(inspection: i),
-    _ => const HomeScreen(),
+    'home' => const HomeScreen(),
+    'garage' => const GarageScreen(),
+    'garage_auto' => GarageAutoScreen(aviso: Aviso('demo', {
+        'marca': 'Toyota', 'modelo': 'RAV4', 'anio': 2019, 'km': 84000, 'precio': 15990000, 'puntaje': 88,
+        'comuna': 'La Serena', 'combustible': 'Bencina', 'transmision': 'Automática',
+        'descripcion': 'Único dueño, mantenciones al día.', 'fotos': [], 'videos': [],
+      })),
+    'trabajo' => ActualizacionScreen(inspection: i),
+    _ => const InicioScreen(),
   };
 }

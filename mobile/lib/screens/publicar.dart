@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +8,7 @@ import '../marketplace.dart';
 import '../messages.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'garage.dart';
 import 'videos.dart';
 
 /// Publicar el auto inspeccionado en el marketplace de atlasmotors.cl.
@@ -169,6 +171,7 @@ class _PublicarScreenState extends State<PublicarScreen> {
   }
 
   String? get _falta {
+    if (v.publicada != null) return null; // lo de venta ya se edita en Garage
     if ((v.precio ?? 0) <= 0) return 'Falta el precio.';
     if (v.fotos.isEmpty) return 'Elige al menos una foto.';
     if (!v.autorizada) return 'Confirma que el dueño autorizó publicar.';
@@ -184,7 +187,7 @@ class _PublicarScreenState extends State<PublicarScreen> {
       await Marketplace.publicar(i, (t) => mounted ? setState(() => _avance = t) : null);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(nueva ? 'Publicado en atlasmotors.cl' : 'Publicación actualizada')));
+          content: Text(nueva ? 'Publicado en atlasmotors.cl' : 'Informe actualizado en la web')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -245,7 +248,7 @@ class _PublicarScreenState extends State<PublicarScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(falta, style: const TextStyle(color: C.muted, fontSize: 13)),
                     ),
-                  GoldButton(publicada ? 'Actualizar publicación' : 'Publicar en atlasmotors.cl',
+                  GoldButton(publicada ? 'Actualizar informe en la web' : 'Publicar en atlasmotors.cl',
                       icon: Icons.storefront_outlined, onPressed: falta == null ? _publicar : null),
                 ]),
         ),
@@ -254,8 +257,80 @@ class _PublicarScreenState extends State<PublicarScreen> {
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          if (publicada) _publicadaCard() else _queSePublica(),
+          if (publicada) ...[
+            _publicadaCard(),
+            const SizedBox(height: 14),
+            _garageCard(),
+          ] else
+            _queSePublica(),
           const SizedBox(height: 22),
+          if (!publicada) ..._datosDeVenta(),
+          TextField(
+            controller: _comentario,
+            minLines: 2,
+            maxLines: 6,
+            textCapitalization: TextCapitalization.sentences,
+            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+            decoration: const InputDecoration(
+                labelText: 'Comentario del inspector',
+                helperText: 'Lo leen los compradores. Parte de tu conclusión; ajústalo si hace falta.',
+                helperMaxLines: 2),
+            onChanged: (t) {
+              v.comentario = t;
+              _guardar();
+            },
+          ),
+          if (!publicada) ..._fotosYVideos(),
+          const SizedBox(height: 22),
+          Text('Lo que ven los compradores', style: display(18)),
+          const SizedBox(height: 4),
+          const Text(
+              'Los puntos con observación o problema se muestran siempre, como texto. Es lo que hace creíble el sello de Atlas Motors.',
+              style: TextStyle(color: C.muted, fontSize: 13)),
+          const SizedBox(height: 10),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text('Puntaje ${i.score ?? '–'}/100', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  if (i.recomendacion != null) SevPill(recomendaciones[i.recomendacion!], i.recomendacion!),
+                ]),
+                const SizedBox(height: 8),
+                if (hs.isEmpty)
+                  const Text('Sin observaciones ni problemas.', style: TextStyle(color: C.muted))
+                else
+                  for (final h in hs)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(children: [
+                        SevPill(h.opt.label, h.opt.sev),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(h.item.label, style: const TextStyle(fontSize: 14))),
+                      ]),
+                    ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 14),
+          CheckboxListTile(
+            value: v.autorizada,
+            onChanged: (b) {
+              setState(() => v.autorizada = b ?? false);
+              Store.I.save(i);
+            },
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('El dueño del auto autorizó publicarlo'),
+            subtitle: const Text('No se publica la patente ni sus datos. Los interesados escriben al WhatsApp de Atlas.'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _datosDeVenta() => [
           Text('Datos de venta', style: display(18)),
           const SizedBox(height: 10),
           TextField(
@@ -310,21 +385,9 @@ class _PublicarScreenState extends State<PublicarScreen> {
             },
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _comentario,
-            minLines: 2,
-            maxLines: 6,
-            textCapitalization: TextCapitalization.sentences,
-            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-            decoration: const InputDecoration(
-                labelText: 'Comentario del inspector',
-                helperText: 'Lo leen los compradores. Parte de tu conclusión; ajústalo si hace falta.',
-                helperMaxLines: 2),
-            onChanged: (t) {
-              v.comentario = t;
-              _guardar();
-            },
-          ),
+      ];
+
+  List<Widget> _fotosYVideos() => [
           const SizedBox(height: 22),
           Row(children: [
             Expanded(child: Text('Fotos', style: display(18))),
@@ -355,53 +418,36 @@ class _PublicarScreenState extends State<PublicarScreen> {
           _fotos(),
           const SizedBox(height: 22),
           _videos(),
-          const SizedBox(height: 22),
-          Text('Lo que ven los compradores', style: display(18)),
-          const SizedBox(height: 4),
-          const Text(
-              'Los puntos con observación o problema se muestran siempre, como texto. Es lo que hace creíble el sello de Atlas Motors.',
-              style: TextStyle(color: C.muted, fontSize: 13)),
-          const SizedBox(height: 10),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text('Puntaje ${i.score ?? '–'}/100', style: const TextStyle(fontWeight: FontWeight.w700)),
-                  const Spacer(),
-                  if (i.recomendacion != null) SevPill(recomendaciones[i.recomendacion!], i.recomendacion!),
-                ]),
-                const SizedBox(height: 8),
-                if (hs.isEmpty)
-                  const Text('Sin observaciones ni problemas.', style: TextStyle(color: C.muted))
-                else
-                  for (final h in hs)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(children: [
-                        SevPill(h.opt.label, h.opt.sev),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(h.item.label, style: const TextStyle(fontSize: 14))),
-                      ]),
-                    ),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 14),
-          CheckboxListTile(
-            value: v.autorizada,
-            onChanged: (b) {
-              setState(() => v.autorizada = b ?? false);
-              Store.I.save(i);
-            },
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('El dueño del auto autorizó publicarlo'),
-            subtitle: const Text('No se publica la patente ni sus datos. Los interesados escriben al WhatsApp de Atlas.'),
-          ),
-        ],
-      ),
-    );
+      ];
+
+  Widget _garageCard() => Card(
+        child: ListTile(
+          contentPadding: const EdgeInsets.fromLTRB(14, 6, 8, 6),
+          leading: const Icon(Icons.garage_outlined, color: C.gold700),
+          title: const Text('Precio, fotos y videos', style: TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: const Text('Ahora se editan en Garage, también por el equipo de fotografía y venta.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _abrirGarage,
+        ),
+      );
+
+  Future<void> _abrirGarage() async {
+    final DocumentSnapshot<Map<String, dynamic>> d;
+    try {
+      d = await FirebaseFirestore.instance.collection('publicaciones').doc(i.id).get();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Sin conexión. Revisa tu señal e intenta de nuevo.')));
+      }
+      return;
+    }
+    if (!mounted) return;
+    if (!d.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Este auto ya no está publicado.')));
+      return;
+    }
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => GarageAutoScreen(aviso: Aviso(d.id, d.data()!))));
   }
 
   Widget _queSePublica() => Container(
@@ -434,7 +480,7 @@ class _PublicarScreenState extends State<PublicarScreen> {
             Text('Publicado en atlasmotors.cl', style: TextStyle(fontWeight: FontWeight.w700, color: C.sev[0], fontSize: 15.5)),
           ]),
           const SizedBox(height: 6),
-          const Text('Si cambias algo, toca "Actualizar publicación" para que se vea en la web.',
+          const Text('Si cambias algo de la inspección o agregas un trabajo posterior, toca "Actualizar informe en la web".',
               style: TextStyle(color: C.muted, fontSize: 13)),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [

@@ -441,6 +441,62 @@ List<pw.Widget> _seccionDanos(Inspection i, pw.Widget titulo, pw.Font bold, {dou
   ];
 }
 
+/// "Corregido el 20 nov 2026: Se cambiaron los neumáticos", bajo un hallazgo.
+pw.Widget _corregido(Actualizacion a, pw.Font bold) => pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 3),
+      child: pw.Text(
+        'Corregido el ${DateFormat('d MMM y', 'es').format(a.fecha)}${a.texto.trim().isEmpty ? '' : ': ${a.texto.trim()}'}',
+        style: pw.TextStyle(font: bold, fontSize: 8.5, color: _sev[0]),
+      ),
+    );
+
+/// Trabajos hechos después de la inspección, del más reciente al más antiguo.
+/// [respaldos]: true en el informe del cliente (se nombran las fotos de la
+/// boleta, que van al final); la ficha pública solo dice que hay respaldo.
+List<pw.Widget> _seccionActualizaciones(Inspection i, pw.Widget titulo, pw.Font bold, {required bool respaldos}) {
+  if (i.actualizaciones.isEmpty) return [];
+  final lista = [...i.actualizaciones]..sort((a, b) => b.fecha.compareTo(a.fecha));
+  String punto(Actualizacion a) {
+    for (final s in checklist) {
+      for (final it in s.items) {
+        if (it.id == a.item) return it.label;
+      }
+    }
+    return '';
+  }
+
+  return [
+    titulo,
+    pw.Text('Lo que se hizo al vehículo después de la inspección. El resultado original de cada punto se mantiene.',
+        style: const pw.TextStyle(fontSize: 8.5, color: _muted)),
+    pw.SizedBox(height: 6),
+    for (final a in lista)
+      pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 6),
+        padding: const pw.EdgeInsets.all(8),
+        decoration: pw.BoxDecoration(color: _sevBg[0], borderRadius: pw.BorderRadius.circular(4)),
+        child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.SizedBox(
+              width: 70,
+              child: pw.Text(DateFormat('d MMM y', 'es').format(a.fecha),
+                  style: pw.TextStyle(font: bold, fontSize: 9, color: _sev[0]))),
+          pw.Expanded(
+            child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              if (punto(a).isNotEmpty) pw.Text(punto(a), style: pw.TextStyle(font: bold, fontSize: 9.5)),
+              if (a.texto.trim().isNotEmpty) pw.Text(a.texto.trim(), style: const pw.TextStyle(fontSize: 9.5)),
+              if (a.fotos.isNotEmpty)
+                pw.Text(
+                    respaldos
+                        ? 'Respaldo: ${a.fotos.length == 1 ? '1 foto' : '${a.fotos.length} fotos'} al final del informe.'
+                        : 'Con respaldo (boleta o factura) revisado por Atlas Motors.',
+                    style: const pw.TextStyle(fontSize: 8, color: _muted)),
+            ]),
+          ),
+        ]),
+      ),
+  ];
+}
+
 Future<Uint8List> buildReport(Inspection i) async {
   final logo = pw.MemoryImage((await rootBundle.load('assets/logo-wordmark.jpg')).buffer.asUint8List());
   final shield = pw.MemoryImage((await rootBundle.load('assets/logo-shield.jpg')).buffer.asUint8List());
@@ -466,6 +522,15 @@ Future<Uint8List> buildReport(Inspection i) async {
       for (final f in i.results[it.id]?.fotos ?? const <String>[]) {
         final bytes = await fotoParaPdf(f);
         if (bytes != null) fotos.add((pw.MemoryImage(bytes), '${s.title}: ${it.label}'));
+      }
+    }
+  }
+  final respaldos = <(pw.MemoryImage, String)>[];
+  for (final a in i.actualizaciones) {
+    for (final f in a.fotos) {
+      final bytes = await fotoParaPdf(f);
+      if (bytes != null) {
+        respaldos.add((pw.MemoryImage(bytes), 'Respaldo ${DateFormat('d MMM y', 'es').format(a.fecha)}: ${a.texto.trim()}'));
       }
     }
   }
@@ -648,6 +713,7 @@ Future<Uint8List> buildReport(Inspection i) async {
                         pw.Padding(
                             padding: const pw.EdgeInsets.only(top: 2),
                             child: pw.Text(h.result.nota.trim(), style: const pw.TextStyle(fontSize: 8.5))),
+                      if (h.corregido != null) _corregido(h.corregido!, bold),
                     ]),
                   ),
                   pw.Padding(
@@ -681,6 +747,8 @@ Future<Uint8List> buildReport(Inspection i) async {
           ),
       ],
 
+      ..._seccionActualizaciones(i, h2('Después de la inspección'), bold, respaldos: true),
+
       if (i.danos.isNotEmpty || i.carroceria.isNotEmpty)
         ..._seccionDanos(i, h2('Mapa de daños de carrocería'), bold),
 
@@ -688,6 +756,8 @@ Future<Uint8List> buildReport(Inspection i) async {
       for (final (n, s) in checklist.indexed) sectionTable(s, n + 1),
 
       ..._fotosEnFilas(h2('Registro fotográfico'), fotos),
+
+      ..._fotosEnFilas(h2('Respaldos de los trabajos posteriores'), respaldos),
 
       ...videos,
 
@@ -832,9 +902,6 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
             if (datos.isNotEmpty) pw.Padding(
                 padding: const pw.EdgeInsets.only(top: 3),
                 child: pw.Text(datos, style: const pw.TextStyle(fontSize: 10, color: _muted))),
-            if (v.precio != null) pw.Padding(
-                padding: const pw.EdgeInsets.only(top: 6),
-                child: pw.Text(clp(v.precio!), style: pw.TextStyle(font: bold, fontSize: 16, color: _green))),
             pw.SizedBox(height: 8),
             pw.Wrap(spacing: 6, runSpacing: 4, children: [
               pill('${c[0]} en buen estado', 0),
@@ -909,6 +976,7 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
                     child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                       pw.Text(h.item.label, style: pw.TextStyle(font: bold, fontSize: 9.5)),
                       pw.Text(h.section.title, style: const pw.TextStyle(fontSize: 8, color: _muted)),
+                      if (h.corregido != null) _corregido(h.corregido!, bold),
                     ]),
                   ),
                   pw.Padding(
@@ -919,6 +987,7 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
               ),
           ],
         ),
+      ..._seccionActualizaciones(i, h2('Después de la inspección'), bold, respaldos: false),
       if (i.danos.isNotEmpty || i.carroceria.isNotEmpty)
         ..._seccionDanos(i, h2('Mapa de daños de carrocería'), bold),
       ..._fotosEnFilas(h2('Fotos'), fotos),
@@ -930,7 +999,7 @@ Future<Uint8List> buildFicha(Inspection i, {Future<Uint8List> Function(Uint8List
           for (final t in [
             'Resumen de la inspección precompra que Atlas Motors le hizo a este vehículo el $fecha. '
                 'Muestra todos los puntos con observación o problema; las fotos las eligió el vendedor.',
-            'El precio y la descripción del vendedor son responsabilidad del vendedor.',
+            'El precio, la descripción y las fotos del aviso en atlasmotors.cl son responsabilidad del vendedor.',
             ...alcance.where((t) => !t.startsWith('Los costos')).map((t) => t.replaceFirst('Este informe', 'Esta ficha')),
           ])
             pw.Padding(

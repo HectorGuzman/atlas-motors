@@ -86,6 +86,9 @@ enum VideoTools {
     export.outputURL = salida
     export.outputFileType = .mp4
     export.shouldOptimizeForNetworkUse = true
+    // Sin la ubicación GPS ni otros datos del teléfono que graban los iPhone:
+    // los videos de autos en venta se publican en la web.
+    export.metadataItemFilter = .forSharing()
     if let logo = logo, let pista = asset.tracks(withMediaType: .video).first {
       // Tamaño del video ya girado (los videos verticales vienen con rotación).
       let r = CGRect(origin: .zero, size: pista.naturalSize).applying(pista.preferredTransform)

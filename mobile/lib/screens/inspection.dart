@@ -5,6 +5,7 @@ import '../checklist.dart';
 import '../messages.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'actualizaciones.dart';
 import 'publicar.dart';
 import 'report.dart';
 import 'section.dart';
@@ -156,6 +157,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
           const SizedBox(height: 14),
           _Hallazgos(i),
           const SizedBox(height: 14),
+          if (!i.esEjemplo) ...[ActualizacionesCard(i), const SizedBox(height: 14)],
           VideosCard(i),
           const SizedBox(height: 22),
           Text('Conclusión', style: display(18)),
@@ -370,7 +372,12 @@ class _Hallazgos extends StatelessWidget {
                 child: Row(children: [
                   SevPill(h.opt.label, h.opt.sev),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(h.item.label, style: const TextStyle(fontSize: 14))),
+                  Expanded(
+                    child: Text.rich(TextSpan(text: h.item.label, children: [
+                      if (h.corregido != null)
+                        TextSpan(text: '  · corregido', style: TextStyle(color: C.sev[0], fontWeight: FontWeight.w700)),
+                    ]), style: const TextStyle(fontSize: 14)),
+                  ),
                   if (h.result.costo != null)
                     Text(clp(h.result.costo!), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
                 ]),

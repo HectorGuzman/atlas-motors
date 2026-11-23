@@ -24,21 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _open(Inspection i) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => InspectionScreen(inspection: i)));
 
-  Future<void> _confirmLogout() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('¿Cerrar sesión?'),
-        content: const Text('Tus inspecciones y fotos quedan respaldadas en la nube.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Cerrar sesión')),
-        ],
-      ),
-    );
-    if (ok == true) Store.I.logout();
-  }
-
   @override
   Widget build(BuildContext context) => ListenableBuilder(listenable: Store.I, builder: (context, _) => _build(context));
 
@@ -51,12 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 12,
-        title: Image.asset('assets/logo-wordmark.jpg', height: 44),
+        title: const Text('Inspecciones'),
         centerTitle: false,
-        actions: [
-          IconButton(tooltip: 'Cerrar sesión', icon: const Icon(Icons.logout), onPressed: _confirmLogout),
-        ],
         bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(height: 1, color: C.gold.withValues(alpha: .35))),
       ),
       floatingActionButton: Padding(
@@ -67,9 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 110),
         children: [
-          Text('Hola, ${store.userName}', style: display(24)),
-          const SizedBox(height: 4),
-          Text(store.inspections.length == 1 ? '1 inspección' : '${store.inspections.length} inspecciones', style: const TextStyle(color: C.muted)),
+          Text(store.inspections.length == 1 ? '1 inspección' : '${store.inspections.length} inspecciones', style: display(22)),
           if (store.fotosPorSubir + store.videosPorSubir > 0) ...[
             const SizedBox(height: 10),
             Container(
@@ -188,3 +167,21 @@ String porSubir(int fotos, int videos) => [
       if (fotos > 0) fotos == 1 ? '1 foto' : '$fotos fotos',
       if (videos > 0) videos == 1 ? '1 video' : '$videos videos',
     ].join(' y ');
+
+/// Pregunta antes de cerrar la sesión.
+Future<void> confirmarSalida(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: const Text('¿Cerrar sesión?'),
+      content: Text(Store.I.esAdmin
+          ? 'Tus inspecciones y fotos quedan respaldadas en la nube.'
+          : 'Puedes volver a entrar con tu correo y tu clave.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Cerrar sesión')),
+      ],
+    ),
+  );
+  if (ok == true) Store.I.logout();
+}

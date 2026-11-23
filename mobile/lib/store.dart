@@ -33,7 +33,8 @@ class Hallazgo {
   final Section section;
   final Item item;
   final ItemResult result;
-  Hallazgo(this.section, this.item, this.result);
+  final Actualizacion? corregido; // si se arregló después de la inspección
+  Hallazgo(this.section, this.item, this.result, [this.corregido]);
   Opt get opt => item.opts[result.opt!];
 }
 
@@ -71,6 +72,26 @@ class Video {
         archivo: j['archivo'], miniatura: j['miniatura'], nota: j['nota'] ?? '', item: j['item'],
         segundos: j['segundos'] ?? 0, url: j['url'],
       );
+}
+
+/// Algo que se le hizo al auto después de la inspección (por ejemplo, se
+/// cambiaron los neumáticos), con su respaldo: boleta, factura o foto del
+/// trabajo. El resultado original de la inspección no cambia; el punto se
+/// muestra como corregido en el informe y en la web.
+class Actualizacion {
+  final String id;
+  DateTime fecha;
+  String? item; // punto del checklist que corrige (opcional)
+  String texto; // "Se cambiaron los 4 neumáticos (Bridgestone 2026)"
+  List<String> fotos; // respaldo; son privadas: no se publican en la web
+  Actualizacion({required this.id, required this.fecha, this.item, this.texto = '', List<String>? fotos})
+      : fotos = fotos ?? [];
+
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'fecha': fecha.toIso8601String(), 'item': item, 'texto': texto, 'fotos': fotos};
+  factory Actualizacion.fromJson(Map<String, dynamic> j) => Actualizacion(
+      id: j['id'], fecha: DateTime.parse(j['fecha']), item: j['item'], texto: j['texto'] ?? '',
+      fotos: List<String>.from(j['fotos'] ?? []));
 }
 
 /// Datos para vender el auto en el marketplace de atlasmotors.cl.
@@ -121,6 +142,7 @@ class Inspection {
   Map<String, ItemResult> results;
   List<Video> videos;
   List<Dano> danos; // mapa de daños de la carrocería
+  List<Actualizacion> actualizaciones; // trabajos hechos después de la inspección
   String carroceria; // tipo de vehículo para el mapa (ver tiposCarroceria); vacío = sin elegir
   Venta? venta; // solo si el auto se va a vender en atlasmotors.cl
   DateTime actualizado; // último cambio, para decidir qué copia gana al sincronizar
@@ -144,12 +166,14 @@ class Inspection {
     Map<String, ItemResult>? results,
     List<Video>? videos,
     List<Dano>? danos,
+    List<Actualizacion>? actualizaciones,
     this.carroceria = '',
     this.venta,
     DateTime? actualizado,
   })  : results = results ?? {},
         videos = videos ?? [],
         danos = danos ?? [],
+        actualizaciones = actualizaciones ?? [],
         actualizado = actualizado ?? fecha;
 
   /// La inspección de ejemplo que trae la app (no se respalda ni se publica).
@@ -180,7 +204,7 @@ class Inspection {
     for (final s in checklist) {
       for (final it in s.items) {
         final r = results[it.id];
-        if (r?.opt != null && r!.opt! < it.opts.length && it.opts[r.opt!].sev > 0) out.add(Hallazgo(s, it, r));
+        if (r?.opt != null && r!.opt! < it.opts.length && it.opts[r.opt!].sev > 0) out.add(Hallazgo(s, it, r, correccionDe(it.id)));
       }
     }
     out.sort((a, b) => b.opt.sev.compareTo(a.opt.sev));
@@ -215,6 +239,7 @@ class Inspection {
         },
         'videos': [for (final v in videos) v.toJson()],
         'danos': [for (final d in danos) d.toJson()],
+        if (actualizaciones.isNotEmpty) 'actualizaciones': [for (final a in actualizaciones) a.toJson()],
         'carroceria': carroceria,
         if (venta != null) 'venta': venta!.toJson(),
       };
@@ -222,7 +247,17 @@ class Inspection {
   /// Todas las fotos de la inspección: las de cada punto, las tomadas para la
   /// venta y las miniaturas de los videos.
   Iterable<String> get todasLasFotos =>
-      {...results.values.expand((r) => r.fotos), ...danos.expand((d) => d.fotos), ...?venta?.fotos, for (final v in videos) if (v.miniatura.isNotEmpty) v.miniatura};
+      {...results.values.expand((r) => r.fotos), ...danos.expand((d) => d.fotos),
+       ...actualizaciones.expand((a) => a.fotos), ...?venta?.fotos, for (final v in videos) if (v.miniatura.isNotEmpty) v.miniatura};
+
+  /// La última actualización que corrige ese punto (null si no se ha corregido).
+  Actualizacion? correccionDe(String itemId) {
+    Actualizacion? out;
+    for (final a in actualizaciones) {
+      if (a.item == itemId && (out == null || !a.fecha.isBefore(out.fecha))) out = a;
+    }
+    return out;
+  }
 
   /// Videos asociados a un punto del checklist.
   List<Video> videosDe(String itemId) => [for (final v in videos) if (v.item == itemId) v];
@@ -239,6 +274,9 @@ class Inspection {
         videos: [for (final v in (j['videos'] as List? ?? [])) Video.fromJson(Map<String, dynamic>.from(v))],
         carroceria: j['carroceria'] ?? '',
         danos: [for (final d in (j['danos'] as List? ?? [])) Dano.fromJson(Map<String, dynamic>.from(d))],
+        actualizaciones: [
+          for (final a in (j['actualizaciones'] as List? ?? [])) Actualizacion.fromJson(Map<String, dynamic>.from(a))
+        ],
         venta: j['venta'] == null ? null : Venta.fromJson(Map<String, dynamic>.from(j['venta'])),
         actualizado: j['actualizado'] == null ? null : DateTime.parse(j['actualizado']),
       );
@@ -265,6 +303,34 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
   late Directory _dir;
   List<Inspection> inspections = [];
   String? userEmail;
+
+  /// Perfil en el equipo (documento `equipo/{uid}`): 'admin' ve y edita todo;
+  /// 'garage' solo administra los autos en venta. null = la cuenta no está en
+  /// el equipo (o todavía no se sabe: sin señal la primera vez).
+  String? rol;
+  bool get esAdmin => rol == 'admin';
+  bool get esGarage => rol == 'garage';
+
+  /// Se guarda en el teléfono para abrir la app sin señal.
+  Future<void> _cargarRol() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final d = await FirebaseFirestore.instance.collection('equipo').doc(uid).get();
+      final r = d.data()?['rol'];
+      rol = r is String && (r == 'admin' || r == 'garage') ? r : null;
+      rol == null ? await prefs.remove('rol-$uid') : await prefs.setString('rol-$uid', rol!);
+    } catch (e) {
+      debugPrint('No se pudo leer el perfil: $e');
+      rol = prefs.getString('rol-$uid');
+    }
+    rolCargado = true;
+    notifyListeners();
+  }
+
+  /// true cuando ya se intentó leer el perfil (para no mostrar "sin acceso" antes de tiempo).
+  bool rolCargado = false;
 
   /// Lo último que se mandó a la nube por inspección, para subir solo lo que cambió.
   final Map<String, String> _enNube = {};
@@ -327,7 +393,14 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
     }
     userEmail = _auth.currentUser?.email;
     WidgetsBinding.instance.addObserver(this);
-    if (userEmail != null) unawaited(sync());
+    if (userEmail != null) {
+      final cache = (await SharedPreferences.getInstance()).getString('rol-${_auth.currentUser!.uid}');
+      if (cache != null) {
+        rol = cache;
+        rolCargado = true;
+      }
+      unawaited(_cargarRol().then((_) => sync()));
+    }
   }
 
   /// Fotos tomadas en este teléfono que todavía no llegan a la nube.
@@ -342,7 +415,7 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       unawaited(guardarPendiente()); // que no se pierda lo que estaba escribiendo
-    } else if (state == AppLifecycleState.resumed && userEmail != null) {
+    } else if (state == AppLifecycleState.resumed && userEmail != null && esAdmin) {
       // Al volver a la app: trae cambios y reintenta fotos (máximo una vez por minuto).
       final u = _ultimaSync;
       if (u == null || DateTime.now().difference(u) > const Duration(minutes: 1)) unawaited(sync());
@@ -363,7 +436,7 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
       };
     }
     userEmail = _auth.currentUser?.email;
-    notifyListeners();
+    await _cargarRol();
     unawaited(sync());
     return null;
   }
@@ -382,6 +455,8 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> logout() async {
     await _auth.signOut();
     userEmail = null;
+    rol = null;
+    rolCargado = false;
     notifyListeners();
   }
 
@@ -435,7 +510,7 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
 
   void _subir(Inspection i) {
     final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
+    if (uid == null || !esAdmin) return;
     _col.doc(i.id).set({
       ...i.toJson(),
       'actualizado': Timestamp.fromDate(i.actualizado),
@@ -447,7 +522,7 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Trae las inspecciones de la nube y las junta con las del teléfono.
   Future<void> sync() async {
-    if (_auth.currentUser == null) return;
+    if (_auth.currentUser == null || !esAdmin) return;
     _ultimaSync = DateTime.now();
     try {
       final snap = await _col.get();
@@ -599,7 +674,8 @@ class Store extends ChangeNotifier with WidgetsBindingObserver {
   /// venta (no está en ningún punto del checklist), se borra del teléfono.
   Future<void> quitarFotoVenta(Inspection i, String name) async {
     i.venta?.fotos.remove(name);
-    if (!i.results.values.any((r) => r.fotos.contains(name)) && !i.danos.any((d) => d.fotos.contains(name))) {
+    if (!i.results.values.any((r) => r.fotos.contains(name)) && !i.danos.any((d) => d.fotos.contains(name))
+        && !i.actualizaciones.any((a) => a.fotos.contains(name))) {
       await _borrarFotoLocal(name);
       if (_porSubir.remove('${i.id}/$name')) await _colaFile.writeAsString(jsonEncode(_porSubir.toList()));
     }
