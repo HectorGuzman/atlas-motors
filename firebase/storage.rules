@@ -1,18 +1,29 @@
 rules_version = '2';
 // Fotos de inspecciones: fotos/{inspeccion}/{archivo}.jpg
-// Solo el equipo (documento en Firestore equipo/{uid}) las sube y las ve.
+// Las de inspecciones solo las ve y sube un admin (equipo/{uid} con rol admin);
+// las públicas de autos en venta también el equipo Garage.
 service firebase.storage {
   match /b/{bucket}/o {
+    function rol() {
+      return request.auth == null ? ''
+        : firestore.get(/databases/(default)/documents/equipo/$(request.auth.uid)).data.get('rol', '');
+    }
+    function esAdmin() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/equipo/$(request.auth.uid))
+        && rol() == 'admin';
+    }
     function esEquipo() {
       return request.auth != null
-        && firestore.exists(/databases/(default)/documents/equipo/$(request.auth.uid));
+        && firestore.exists(/databases/(default)/documents/equipo/$(request.auth.uid))
+        && rol() in ['admin', 'garage'];
     }
 
     match /fotos/{inspeccion}/{archivo} {
-      allow read: if esEquipo();
+      allow read: if esAdmin();
       // Solo imágenes de hasta 10 MB. Cada foto tiene un nombre único, así que
       // en la práctica no se pisan. No se borran desde la app.
-      allow write: if esEquipo()
+      allow write: if esAdmin()
         && request.resource != null
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
@@ -21,15 +32,15 @@ service firebase.storage {
     // Videos de inspecciones (hasta 30 s, comprimidos a 720p): videos/{inspeccion}/{archivo}.mp4
     // Si el teléfono no logra comprimirlo se sube el original, por eso el margen.
     match /videos/{inspeccion}/{archivo} {
-      allow read: if esEquipo();
-      allow write: if esEquipo()
+      allow read: if esAdmin();
+      allow write: if esAdmin()
         && request.resource != null
         && request.resource.size < 80 * 1024 * 1024
         && request.resource.contentType.matches('video/.*');
     }
 
     // Marketplace: fotos reducidas, videos y ficha PDF de autos en venta. Públicas
-    // (la web las muestra); solo el equipo las sube o las borra.
+    // (la web las muestra); las suben o borran los admin y el equipo Garage.
     match /publicaciones/{inspeccion}/{archivo} {
       allow read: if true;
       allow delete: if esEquipo();

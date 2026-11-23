@@ -3,11 +3,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Equipo de Atlas: un documento por persona autorizada (id = uid de Auth).
-    // Solo se administra desde la consola o con credenciales de Google Cloud.
-    function esEquipo() {
+    // Equipo de Atlas: un documento por persona autorizada (id = uid de Auth),
+    // con su `rol`. Solo se administra desde la consola o con credenciales de
+    // Google Cloud (firebase/equipo.py).
+    //  - admin:  todo (inspecciones, publicaciones, estadísticas).
+    //  - garage: solo los autos en venta: precio, datos de venta, fotos y videos.
+    function rol() {
+      return request.auth == null ? ''
+        : get(/databases/$(database)/documents/equipo/$(request.auth.uid)).data.get('rol', '');
+    }
+    function esAdmin() {
       return request.auth != null
-        && exists(/databases/$(database)/documents/equipo/$(request.auth.uid));
+        && exists(/databases/$(database)/documents/equipo/$(request.auth.uid))
+        && rol() == 'admin';
+    }
+    function esGarage() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/equipo/$(request.auth.uid))
+        && rol() == 'garage';
     }
 
     match /equipo/{uid} {
@@ -15,23 +28,28 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Inspecciones: las lee y escribe solo el equipo. No se borran desde la
+    // Inspecciones: las lee y escribe solo un admin. No se borran desde la
     // app (se marcan con borrada = true) y quien escribe queda registrado.
     match /inspecciones/{id} {
-      allow read: if esEquipo();
-      allow create, update: if esEquipo()
+      allow read: if esAdmin();
+      allow create, update: if esAdmin()
         && request.resource.data.editadoPor == request.auth.uid
         && request.resource.data.actualizado is timestamp;
       allow delete: if false;
     }
 
     // Marketplace de atlasmotors.cl: autos en venta. Cualquiera los lee (la web
-    // los muestra sin login); solo el equipo los publica, edita o quita.
+    // los muestra sin login). Un admin los publica, quita y actualiza el informe;
+    // el equipo Garage solo cambia los datos de venta, las fotos y los videos.
     // No llevan patente ni datos del dueño.
     match /publicaciones/{id} {
       allow read: if true;
-      allow delete: if esEquipo();
-      allow create, update: if esEquipo() && publicacionValida(request.resource.data, id);
+      allow delete: if esAdmin();
+      allow create: if esAdmin() && publicacionValida(request.resource.data, id);
+      allow update: if publicacionValida(request.resource.data, id)
+        && (esAdmin()
+            || (esGarage() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                  ['precio', 'comuna', 'combustible', 'transmision', 'descripcion', 'fotos', 'videos', 'actualizado'])));
     }
 
     // Lo que se publica se muestra en atlasmotors.cl: solo campos conocidos,
@@ -40,7 +58,7 @@ service cloud.firestore {
       let storage = '^https://firebasestorage[.]googleapis[.]com/v0/b/atlas-motors-cl-fotos/o/publicaciones%2F.*';
       return d.keys().hasOnly(['id', 'folio', 'marca', 'modelo', 'anio', 'km', 'precio', 'comuna', 'combustible',
             'transmision', 'descripcion', 'comentario', 'puntaje', 'recomendacion', 'nivel', 'conteo', 'etapas',
-            'hallazgos', 'danos', 'mapa', 'fotos', 'videos', 'ficha', 'fechaInspeccion', 'publicado', 'actualizado'])
+            'hallazgos', 'actualizaciones', 'danos', 'mapa', 'fotos', 'videos', 'ficha', 'fechaInspeccion', 'publicado', 'actualizado'])
         && d.id == id
         && d.marca is string && d.marca.size() <= 60
         && d.modelo is string && d.modelo.size() <= 80
@@ -56,6 +74,9 @@ service cloud.firestore {
         && (!('videos' in d) || (d.videos is list && d.videos.size() <= 4))
         && d.hallazgos is list && d.hallazgos.size() <= 100
         && d.etapas is list && d.etapas.size() <= 20
+        && (!('actualizaciones' in d) || (d.actualizaciones is list && d.actualizaciones.size() <= 40))
+        && d.combustible is string && d.combustible.size() <= 30
+        && d.transmision is string && d.transmision.size() <= 30
         && (!('danos' in d) || (d.danos is list && d.danos.size() <= 60))
         && (!('mapa' in d) || (d.mapa is map && d.mapa.p is list && d.mapa.p.size() <= 300))
         && d.ficha is string && d.ficha.matches(storage);
@@ -66,7 +87,7 @@ service cloud.firestore {
     // suma (1 a 4) y solo puede subir cada uno en 1: no puede leer, borrar ni
     // poner otros valores. Lee solo el equipo.
     match /estadisticas/{dia} {
-      allow read: if esEquipo();
+      allow read: if esAdmin();
       allow create: if diaValido(dia) && sumaDeAUno(request.resource.data.keys(), {});
       allow update: if diaValido(dia) && sumaDeAUno(request.resource.data.diff(resource.data).affectedKeys(), resource.data);
       allow delete: if false;
