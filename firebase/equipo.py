@@ -10,9 +10,8 @@ Uso (con el login de gcloud):
   python3 firebase/equipo.py agregar CORREO PERFIL "Nombre"
   python3 firebase/equipo.py quitar CORREO           le quita el acceso (la cuenta queda, sin permisos)
 
-Antes de agregar a alguien, crea su cuenta en la consola de Firebase
-(Authentication > Agregar usuario). Después, que entre a la app con
-"¿Olvidaste tu clave?" para crear su propia clave.
+Si la persona no tiene cuenta, `agregar` se la crea sin clave. Después, que
+entre a la app con "¿Olvidaste tu clave?" para crear su propia clave.
 """
 import json
 import subprocess
@@ -34,12 +33,18 @@ def call(method, url, body=None):
         return json.loads(txt) if txt else {}
 
 
-def uid_de(correo):
+def uid_de(correo, nombre=None):
     r = call('POST', f'https://identitytoolkit.googleapis.com/v1/projects/{PROJECT}/accounts:lookup',
              {'email': [correo]})
     users = r.get('users') or []
     if not users:
-        sys.exit(f'No hay una cuenta con el correo {correo}. Créala primero en la consola de Firebase.')
+        if nombre is None:
+            sys.exit(f'No hay una cuenta con el correo {correo}.')
+        # Cuenta nueva sin clave: la persona crea la suya con "¿Olvidaste tu clave?".
+        nueva = call('POST', f'https://identitytoolkit.googleapis.com/v1/projects/{PROJECT}/accounts',
+                     {'email': correo, 'displayName': nombre})
+        print(f'Cuenta creada para {correo}.')
+        return nueva['localId']
     return users[0]['localId']
 
 
@@ -50,7 +55,7 @@ if not args:
         print(f"{f.get('rol', '?'):<8} {f.get('nombre', ''):<24} {f.get('correo', '')}")
 elif args[0] == 'agregar' and len(args) == 4 and args[2] in PERFILES:
     correo, rol, nombre = args[1].strip().lower(), args[2], args[3]
-    uid = uid_de(correo)
+    uid = uid_de(correo, nombre)
     call('PATCH', f'{BASE}/{uid}', {'fields': {
         'correo': {'stringValue': correo}, 'rol': {'stringValue': rol}, 'nombre': {'stringValue': nombre}}})
     print(f'{nombre} ({correo}) quedó con perfil {rol}.')
