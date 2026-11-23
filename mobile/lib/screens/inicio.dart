@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 
+import '../agenda.dart';
+import '../avisos.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'agenda.dart';
 import 'garage.dart';
 import 'home.dart';
 
 /// Inicio de los admin: elegir entre Inspecciones y Garage (autos en venta).
 /// El equipo Garage entra directo a Garage y no ve las inspecciones.
-class InicioScreen extends StatelessWidget {
+class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
+
+  @override
+  State<InicioScreen> createState() => _InicioScreenState();
+}
+
+class _InicioScreenState extends State<InicioScreen> {
+  late final _porConfirmar = Avisos.desactivados ? Stream<List<Reserva>>.value(const []) : Agenda.porConfirmar();
+
+  @override
+  void initState() {
+    super.initState();
+    // Avisos de reservas nuevas desde la web (solo admin, que es quien ve esta pantalla).
+    if (!Avisos.desactivados) WidgetsBinding.instance.addPostFrameCallback((_) => Avisos.iniciar());
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -35,6 +52,20 @@ class InicioScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 const Text('¿Qué vas a hacer hoy?', style: TextStyle(color: C.muted)),
                 const SizedBox(height: 20),
+                StreamBuilder<List<Reserva>>(
+                  stream: _porConfirmar,
+                  builder: (context, snap) {
+                    final n = (snap.data ?? []).where((r) => !r.vencida).length;
+                    return _Opcion(
+                      icon: Icons.calendar_month_outlined,
+                      titulo: 'Agenda',
+                      detalle: 'Horas reservadas en la web, confirmar abonos y bloquear horas.',
+                      dato: n == 0 ? null : (n == 1 ? '1 espera el abono' : '$n esperan el abono'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgendaScreen())),
+                    );
+                  },
+                ),
+                const SizedBox(height: 14),
                 _Opcion(
                   icon: Icons.fact_check_outlined,
                   titulo: 'Inspecciones',

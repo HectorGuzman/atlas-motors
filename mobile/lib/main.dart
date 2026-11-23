@@ -7,10 +7,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'avisos.dart';
 import 'catalog.dart';
 import 'firebase_options.dart';
 import 'checklist.dart';
 import 'screens/actualizaciones.dart';
+import 'screens/agenda.dart';
 import 'screens/garage.dart';
 import 'screens/home.dart';
 import 'screens/inicio.dart';
@@ -47,6 +49,7 @@ class AtlasApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Atlas Motors',
+      navigatorKey: Avisos.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: atlasTheme(),
       locale: const Locale('es'),
@@ -75,6 +78,7 @@ Widget? _debugScreen() {
   if (shot == null) return null;
   Store.I.userEmail = 'matias@atlasmotors.cl';
   Store.I.rol = 'admin';
+  Avisos.desactivados = true;
   final i = Store.I.inspections.first;
   return switch (shot) {
     'form' => const VehicleFormScreen(),
@@ -89,6 +93,7 @@ Widget? _debugScreen() {
         'descripcion': 'Único dueño, mantenciones al día.', 'fotos': [], 'videos': [],
       })),
     'trabajo' => ActualizacionScreen(inspection: i),
+    'agenda' => const AgendaScreen(demo: true),
     _ => const InicioScreen(),
   };
 }
