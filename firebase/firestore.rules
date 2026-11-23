@@ -23,9 +23,31 @@ service cloud.firestore {
         && rol() == 'garage';
     }
 
+    // Cada persona puede guardar solo los tokens de notificación de sus
+    // teléfonos (`fcm`), para recibir los avisos de reservas nuevas.
     match /equipo/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcm'])
+        && request.resource.data.fcm is list && request.resource.data.fcm.size() <= 10;
+      allow create, delete: if false;
+    }
+
+    // Agenda de inspecciones, un documento por mes (AAAA-MM). La web la lee para
+    // mostrar qué horas están libres: no lleva datos de clientes, solo el estado
+    // de cada hora. Las reservas de la web las escribe la función `reservar`;
+    // un admin confirma, cancela y bloquea horas desde la app.
+    match /agenda/{mes} {
+      allow read: if true;
+      allow create, update: if esAdmin() && mes.matches('^20[0-9]{2}-[01][0-9]$')
+        && request.resource.data.keys().hasOnly(['h']) && request.resource.data.h is map;
+      allow delete: if false;
+    }
+
+    // Datos de cada reserva (nombre, teléfono, auto, dirección): solo admin.
+    match /reservas/{id} {
+      allow read, create, update: if esAdmin();
+      allow delete: if false;
     }
 
     // Inspecciones: las lee y escribe solo un admin. No se borran desde la

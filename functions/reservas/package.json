@@ -1,0 +1,12 @@
+{
+  "name": "atlas-reservas",
+  "private": true,
+  "description": "Reservas de inspección desde atlasmotors.cl: toma la hora y avisa a Matías.",
+  "main": "index.js",
+  "engines": { "node": "22" },
+  "scripts": { "test": "node --test" },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.4.0",
+    "firebase-admin": "^13.0.0"
+  }
+}
