@@ -233,9 +233,13 @@
     <section class="section--tight">
       <div class="container">
         <div class="mascot">
-          <div class="mascot__img"><img src="assets/img/aguila.png" alt="Águila mascota de Atlas Motors con overol de mecánico levantando el pulgar" loading="lazy" width="403" height="640"></div>
+          <div class="mascot__img">
+            <button class="eagle" type="button" aria-label="¿Te ayudo? Abrir ayuda">
+              <img src="assets/img/aguila.png" alt="Águila mascota de Atlas Motors con overol de mecánico levantando el pulgar" loading="lazy" width="403" height="640">
+              <span class="eagle__say" aria-hidden="true">¿Te ayudo?</span>
+            </button>
+          </div>
           <div style="position:relative;z-index:1">
-            <span class="bubble">¡Hola! ¿Te ayudo? 👋</span>
             <h2>Soy el ojo de águila de Atlas</h2>
             <p>No se me escapa nada: un repintado, un código de falla escondido o un kilometraje alterado. Cuéntame qué necesitas y te guío al tiro.</p>
             <div class="mascot__actions">
@@ -1224,10 +1228,28 @@
     return `<section class="section"><div class="container" style="text-align:center"><h1 class="display">Página no encontrada</h1><p>El vehículo o la página que buscas no existe.</p><a class="btn btn--gold" href="#/">Volver al inicio</a></div></section>`;
   }
 
+  /* Águila del inicio: cambia lo que dice cada tanto y al tocarla abre la ayuda */
+  function bindAguila() {
+    const eagle = $('.eagle'); if (!eagle) return;
+    const say = eagle.querySelector('.eagle__say');
+    const frases = ['¿Te ayudo?', '¿Buscas auto?', '¡Lo reviso por ti!', '¿Agendamos?'];
+    let n = 0;
+    const t = setInterval(() => {
+      if (!document.body.contains(eagle)) return clearInterval(t);
+      n = (n + 1) % frases.length;
+      say.textContent = frases[n];
+      say.classList.remove('cambia'); void say.offsetWidth; say.classList.add('cambia');
+    }, 4000);
+    eagle.addEventListener('click', () => { const b = $('#helper .helper__btn'); if (b && !$('#helper .helper__panel')) b.click(); });
+  }
+
   /* ---------------- ayudante flotante (mascota) ---------------- */
   function mountHelper() {
     const h = $('#helper'); let open = false;
+    // Hasta que la persona abre la ayuda, el círculo late para llamar la atención.
+    const usado = () => !!sessionStorageSafe('hint');
     const draw = () => {
+      h.classList.toggle('helper--llama', !open && !usado());
       h.innerHTML = `
         ${open ? `<div class="helper__panel">
           <header><img src="assets/img/aguila-cara.png" alt=""><div><b>¿Te ayudo?</b><small>El ojo de águila de Atlas Motors</small></div></header>
@@ -1237,16 +1259,18 @@
             <a href="${waLink()}" target="_blank" rel="noopener">${ic('chat')} Hablar por WhatsApp</a>
             <a href="${IG}" target="_blank" rel="noopener">${ic('instagram')} Ver nuestro Instagram</a>
           </div>
-        </div>` : (sessionStorageSafe('hint') ? '' : '<div class="helper__hint">¿Te ayudo? 🦅</div>')}
-        <button class="helper__btn" aria-label="${open ? 'Cerrar ayuda' : 'Abrir ayuda'}" aria-expanded="${open}"><img src="assets/img/aguila-cara.png" alt=""></button>`;
+        </div>` : ''}
+        <div class="helper__row">
+          ${open ? '' : '<button class="helper__label" type="button" tabindex="-1" aria-hidden="true"><b>¿Te ayudo?</b><small>Agenda o pregúntanos</small></button>'}
+          <button class="helper__btn" aria-label="${open ? 'Cerrar ayuda' : '¿Te ayudo? Agenda o pregúntanos'}" aria-expanded="${open}">${open ? ic('x') : '<img src="assets/img/aguila-cara.png" alt="">'}</button>
+        </div>`;
     };
     h.addEventListener('click', (e) => {
-      if (e.target.closest('.helper__btn')) { open = !open; sessionStorageSafe('hint', '1'); draw(); }
+      if (e.target.closest('.helper__btn, .helper__label')) { open = !open; sessionStorageSafe('hint', '1'); draw(); }
       else if (e.target.closest('a')) { open = false; draw(); }
     });
     window.addEventListener('hashchange', () => { if (open) { open = false; draw(); } });
     draw();
-    setTimeout(() => { sessionStorageSafe('hint', '1'); if (!open) draw(); }, 9000);
   }
   function sessionStorageSafe(k, v) {
     try { if (v === undefined) return sessionStorage.getItem('atlas-' + k); sessionStorage.setItem('atlas-' + k, v); } catch (e) { return null; }
@@ -1261,7 +1285,7 @@
     contarPagina(parts);
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
-      case undefined: html = viewHome(); break;
+      case undefined: html = viewHome(); bind = bindAguila; break;
       case 'autos': html = viewAutos(); bind = bindAutos; nav = 'autos'; break;
       case 'auto': html = viewAutoShell(); bind = () => bindAuto(parts[1]); nav = 'autos'; break;
       case 'informe': html = viewInforme(parts[1] || CARS[0].id); nav = 'inspeccion'; break;
