@@ -904,36 +904,88 @@
     <section class="section--tight" style="padding-bottom:88px">
       <div class="container">
         <div class="cta-band">
-          <div><h2>Agenda en 2 minutos</h2><p>Elige día y hora, cuéntanos del auto y te confirmamos por WhatsApp.</p></div>
+          <div><h2>Agenda en 2 minutos</h2><p>Elige una hora libre, cuéntanos del auto y queda reservada para ti.</p></div>
           <a href="#/agendar" class="btn btn--gold btn--lg">${ic('calendar')} Agendar aquí</a>
         </div>
       </div>
     </section>`;
   }
 
-  /* -------- Agenda: arma la solicitud y la envía por WhatsApp -------- */
-  const booking = { step: 0, date: null, time: null, data: { presente: 'si', donde: 'Particular' }, month: null, sent: false };
+  /* -------- Agenda: horas libres en línea; la reserva la toma la función `reservar` -------- */
+  const booking = { step: 0, date: null, time: null, data: { presente: 'si', donde: 'Particular' }, month: null, enviando: false, error: '', reserva: null };
   const COMUNAS = ['La Serena', 'Coquimbo', 'Otra comuna'];
-  const STEPS = ['Fecha y hora', 'Vehículo y datos', 'Enviar'];
-  const SLOTS = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00', '18:30'];
+  const STEPS = ['Fecha y hora', 'Vehículo y datos', 'Reservar'];
+  // Mismo horario que la app y la función (functions/reservas/horario.js): lunes a
+  // sábado, 45 min de inspección + 45 min de traslado desde las 9:00.
+  const SLOTS = ['09:00', '10:30', '12:00', '13:30', '15:00', '16:30', '18:00', '19:30'];
+  const RESERVAR_URL = 'https://southamerica-west1-atlas-motors-cl.cloudfunctions.net/reservar';
+  const AGENDA_URL = 'https://firestore.googleapis.com/v1/projects/atlas-motors-cl/databases/(default)/documents/agenda/';
+  // reCAPTCHA invisible: se carga solo en la página de agendar, al reservar.
+  const RECAPTCHA_KEY = '6LeLKC8uAAAAAEXTe0UrVrqC2r41401yk-j4vzrn';
+  let captchaListo = null;
+  const cargarCaptcha = () => {
+    if (!RECAPTCHA_KEY) return Promise.resolve(null);
+    if (!captchaListo) {
+      captchaListo = new Promise((ok, mal) => {
+        const sc = document.createElement('script');
+        sc.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_KEY}`;
+        sc.async = true; sc.onload = () => window.grecaptcha.enterprise.ready(ok); sc.onerror = mal;
+        document.head.appendChild(sc);
+      }).catch(() => { captchaListo = null; });
+    }
+    return captchaListo;
+  };
+  const tokenCaptcha = async () => {
+    if (!RECAPTCHA_KEY) return '';
+    try { await cargarCaptcha(); return await window.grecaptcha.enterprise.execute(RECAPTCHA_KEY, { action: 'reservar' }); } catch (e) { return ''; }
+  };
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const diaLargo = (isoDate) => new Date(isoDate + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  // Hora de Chile, para no ofrecer horas que ya pasaron aunque el visitante esté en otro huso.
+  const chileFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const enChile = (ms) => { const p = Object.fromEntries(chileFmt.formatToParts(new Date(ms)).map((x) => [x.type, x.value])); return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute); };
+  const inicioHora = (fecha, hora) => {
+    const [y, m, d] = fecha.split('-').map(Number); const [h, mi] = hora.split(':').map(Number);
+    const supuesto = Date.UTC(y, m - 1, d, h, mi);
+    return supuesto - (enChile(supuesto) - supuesto);
+  };
+
+  // agenda/{AAAA-MM}: qué horas están tomadas (sin datos de clientes).
+  const agenda = {};
+  const cargarMes = (mes) => {
+    if (agenda[mes]) return agenda[mes].promesa;
+    const e = agenda[mes] = { h: null };
+    e.promesa = fetch(`${AGENDA_URL}${mes}?key=${FS_KEY}`)
+      .then((r) => (r.status === 404 ? {} : r.ok ? r.json() : Promise.reject(r.status)))
+      .then((doc) => { const f = doc.fields && doc.fields.h ? fsVal(doc.fields.h) : {}; e.h = f && typeof f === 'object' ? f : {}; })
+      .catch(() => { e.h = {}; e.fallo = true; });
+    return e.promesa;
+  };
+  const tomada = (fecha, hora) => {
+    const c = agenda[fecha.slice(0, 7)]?.h?.[fecha]?.[hora];
+    if (!c || typeof c !== 'object') return false;
+    if (c.e === 'p') return typeof c.v === 'number' && c.v > Date.now();
+    return c.e === 'c' || c.e === 'b';
+  };
+  const libre = (fecha, hora) => inicioHora(fecha, hora) - Date.now() >= 2 * 3600e3 && !tomada(fecha, hora);
+  const mesCargado = (fecha) => !!agenda[fecha.slice(0, 7)]?.h;
+
   const mensajeReserva = () => {
-    const d = booking.data;
+    const d = booking.data; const r = booking.reserva;
     return [
-      'Hola Atlas Motors, quiero agendar una inspección precompra.',
+      r ? `Hola Atlas Motors, reservé una inspección en la web (código ${r.codigo}). ¿Me envían los datos para transferir el abono?` : 'Hola Atlas Motors, quiero agendar una inspección precompra.',
       '',
       `Vehículo: ${d.vehiculo}`,
-      `Vendedor: ${d.donde}`,
-      `Día y hora que prefiero: ${diaLargo(booking.date)}, ${booking.time}`,
+      `${r ? 'Día y hora' : 'Día y hora que prefiero'}: ${diaLargo(booking.date)}, ${booking.time}`,
       `Lugar: ${[d.direccion, d.comuna].filter(Boolean).join(', ')}`,
-      `Modalidad: ${d.presente === 'no' ? 'remota (no estaré presente)' : 'presencial'}`,
-      d.link ? `Publicación: ${d.link}` : '',
-      d.nota ? `Comentarios: ${d.nota}` : '',
+      r ? '' : `Vendedor: ${d.donde}`,
+      r ? '' : `Modalidad: ${d.presente === 'no' ? 'remota (no estaré presente)' : 'presencial'}`,
+      !r && d.link ? `Publicación: ${d.link}` : '',
+      !r && d.nota ? `Comentarios: ${d.nota}` : '',
       '',
       `Nombre: ${d.nombre}`,
-      `Teléfono: ${d.telefono}`,
+      r ? '' : `Teléfono: ${d.telefono}`,
     ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n').trim();
   };
 
@@ -943,7 +995,7 @@
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / <a href="#/inspeccion">Inspección precompra</a> / Agendar</div>
         <h1>Agenda tu inspección</h1>
-        <p>Elige el día y la hora que te acomodan, cuéntanos del auto y te confirmamos disponibilidad por WhatsApp. Reservas con el ${ABONO * 100} % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
+        <p>Elige un día y una hora libre, cuéntanos del auto y la hora queda reservada para ti. La confirmas con el ${ABONO * 100} % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
       </div>
     </section>
     <section class="section--tight" style="padding-bottom:88px">
@@ -955,10 +1007,28 @@
     const root = $('#booking');
     const today = new Date(); today.setHours(0, 0, 0, 0);
     if (!booking.month) booking.month = new Date(today.getFullYear(), today.getMonth(), 1);
+    if (booking.reserva) { booking.reserva = null; booking.step = 0; booking.date = null; booking.time = null; }
     const plan = PLANES[0];
-    const canNext = () => [booking.date && booking.time, ['nombre', 'telefono', 'vehiculo', 'comuna'].every((k) => (booking.data[k] || '').trim()), true][booking.step];
+    const canNext = () => [booking.date && booking.time && libre(booking.date, booking.time), ['nombre', 'telefono', 'vehiculo', 'comuna'].every((k) => (booking.data[k] || '').trim()), true][booking.step];
+    const mesDe = (d) => iso(d).slice(0, 7);
+    const cargarVisibles = () => {
+      const m = booking.month;
+      Promise.all([cargarMes(mesDe(m)), cargarMes(mesDe(new Date(m.getFullYear(), m.getMonth() + 1, 1)))]).then(() => { if (document.body.contains(root)) draw(); });
+    };
 
     const stepBody = () => {
+      if (booking.reserva) {
+        const r = booking.reserva;
+        const hasta = new Date(r.vence).toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hour12: false });
+        return `
+          <h3>¡Tu hora quedó reservada!</h3>
+          <p style="font-size:17px;margin:6px 0 0"><b>${diaLargo(booking.date)}, ${booking.time}</b> · código <b>${esc(r.codigo)}</b></p>
+          <div class="remote-steps" style="margin-top:18px">
+            <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>Transfiere el abono de ${clp(plan.precio * ABONO)}</b><p>Escríbenos ahora por WhatsApp y te mandamos los datos de la cuenta empresa. Te guardamos la hora hasta las ${esc(hasta)}: si el abono no llega en esa hora, la reserva se cancela sola.</p></div></div>
+            <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>Te confirmamos</b><p>Apenas veamos la transferencia, la inspección queda confirmada. El saldo de ${clp(plan.precio - plan.precio * ABONO)} se paga el día de la inspección.</p></div></div>
+          </div>
+          <p style="margin:16px 0 0;font-size:13.5px;color:var(--muted)">${ABONO_POLITICA}</p>`;
+      }
       if (booking.step === 0) {
         const m = booking.month; const first = (m.getDay() + 6) % 7; const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
         const label = m.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
@@ -966,9 +1036,18 @@
         let cells = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="dow">${d}</span>`).join('');
         cells += '<span></span>'.repeat(first);
         for (let d = 1; d <= days; d++) {
-          const dt = new Date(m.getFullYear(), m.getMonth(), d);
-          const dis = dt < today || dt.getDay() === 0 || dt > max;
-          cells += `<button type="button" data-date="${iso(dt)}" ${dis ? 'disabled' : ''} class="${booking.date === iso(dt) ? 'on' : ''} ${+dt === +today ? 'today' : ''}">${d}</button>`;
+          const dt = new Date(m.getFullYear(), m.getMonth(), d); const f = iso(dt);
+          const lleno = mesCargado(f) && !SLOTS.some((s) => libre(f, s));
+          const dis = dt < today || dt.getDay() === 0 || dt > max || lleno;
+          cells += `<button type="button" data-date="${f}" ${dis ? 'disabled' : ''} class="${booking.date === f ? 'on' : ''} ${+dt === +today ? 'today' : ''}" ${lleno && !(dt < today) ? 'title="Sin horas libres"' : ''}>${d}</button>`;
+        }
+        let horas = '<p style="margin:16px 0 0;color:var(--muted)">Selecciona un día. Atendemos de lunes a sábado, de 9:00 a 20:15.</p>';
+        if (booking.date) {
+          horas = mesCargado(booking.date)
+            ? `<p style="margin:18px 0 0;font-weight:600">Horas libres el ${diaLargo(booking.date)}</p>
+              <div class="slots">${SLOTS.map((s) => { const ok = libre(booking.date, s); return `<button type="button" class="slot ${booking.time === s ? 'on' : ''}" data-time="${s}" ${ok ? '' : 'disabled'} aria-label="${s}${ok ? '' : ', no disponible'}">${s}</button>`; }).join('')}</div>
+              <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Cada inspección dura unos 45 minutos. Al reservar, la hora queda guardada para ti por 1 hora mientras transfieres el abono.</p>`
+            : '<p style="margin:18px 0 0;color:var(--muted)">Cargando las horas libres…</p>';
         }
         return `
           <h3>¿Qué día y hora te acomodan?</h3>
@@ -976,35 +1055,34 @@
             <div class="cal__head"><button type="button" data-month="-1" aria-label="Mes anterior">${ic('left')}</button><b>${label}</b><button type="button" data-month="1" aria-label="Mes siguiente">${ic('right')}</button></div>
             <div class="cal__grid">${cells}</div>
           </div>
-          ${booking.date ? `<p style="margin:18px 0 0;font-weight:600">Hora preferida para el ${diaLargo(booking.date)}</p>
-          <div class="slots">${SLOTS.map((s) => `<button type="button" class="slot ${booking.time === s ? 'on' : ''}" data-time="${s}">${s}</button>`).join('')}</div>
-          <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">Es tu preferencia, no una reserva: te confirmamos la hora por WhatsApp según la agenda del día.</p>` : '<p style="margin:16px 0 0;color:var(--muted)">Selecciona un día. Atendemos de lunes a sábado.</p>'}`;
+          ${horas}`;
       }
       if (booking.step === 1) {
         const d = booking.data; const v = (k) => esc(d[k] || '');
         return `
           <h3>El vehículo y tus datos</h3>
           <div class="form-grid" id="dataForm">
-            <div class="field full"><label for="b-veh">Vehículo a inspeccionar *</label><input class="input" id="b-veh" data-k="vehiculo" value="${v('vehiculo')}" placeholder="Marca, modelo y año. Ej: Toyota Hilux 2021"></div>
+            <div class="field full"><label for="b-veh">Vehículo a inspeccionar *</label><input class="input" id="b-veh" data-k="vehiculo" value="${v('vehiculo')}" maxlength="120" placeholder="Marca, modelo y año. Ej: Toyota Hilux 2021"></div>
             <div class="field"><label for="b-donde">¿Quién lo vende?</label><select class="select" id="b-donde" data-k="donde">${['Particular', 'Automotora'].map((o) => `<option ${d.donde === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
             <div class="field"><label for="b-com">Comuna *</label><select class="select" id="b-com" data-k="comuna"><option value="">Selecciona</option>${COMUNAS.map((c) => `<option ${d.comuna === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-            <div class="field full"><label for="b-dir">Dirección donde está el auto</label><input class="input" id="b-dir" data-k="direccion" value="${v('direccion')}" placeholder="Si aún no la tienes, la coordinamos por WhatsApp"></div>
+            <div class="field full"><label for="b-dir">Dirección donde está el auto</label><input class="input" id="b-dir" data-k="direccion" value="${v('direccion')}" maxlength="200" placeholder="Si aún no la tienes, la coordinamos por WhatsApp"></div>
             <div class="field full"><label for="b-pres">¿Estarás presente en la inspección?</label><select class="select" id="b-pres" data-k="presente"><option value="si" ${d.presente !== 'no' ? 'selected' : ''}>Sí, voy a estar</option><option value="no" ${d.presente === 'no' ? 'selected' : ''}>No, prefiero la inspección remota</option></select></div>
-            <div class="field"><label for="b-nombre">Tu nombre *</label><input class="input" id="b-nombre" data-k="nombre" value="${v('nombre')}" autocomplete="name"></div>
-            <div class="field"><label for="b-tel">Tu teléfono *</label><input class="input" id="b-tel" data-k="telefono" value="${v('telefono')}" inputmode="tel" placeholder="+56 9 …" autocomplete="tel"></div>
-            <div class="field full"><label for="b-link">Link de la publicación (opcional)</label><input class="input" id="b-link" data-k="link" value="${v('link')}" placeholder="Yapo, Chileautos, Marketplace…"></div>
-            <div class="field full"><label for="b-nota">Comentarios (opcional)</label><textarea class="textarea" id="b-nota" data-k="nota" placeholder="Ej: el vendedor solo puede después de las 14:00">${v('nota')}</textarea></div>
+            <div class="field"><label for="b-nombre">Tu nombre *</label><input class="input" id="b-nombre" data-k="nombre" value="${v('nombre')}" maxlength="80" autocomplete="name"></div>
+            <div class="field"><label for="b-tel">Tu teléfono *</label><input class="input" id="b-tel" data-k="telefono" value="${v('telefono')}" maxlength="30" inputmode="tel" placeholder="+56 9 …" autocomplete="tel"></div>
+            <div class="field full"><label for="b-link">Link de la publicación (opcional)</label><input class="input" id="b-link" data-k="link" value="${v('link')}" maxlength="500" placeholder="Yapo, Chileautos, Marketplace…"></div>
+            <div class="field full"><label for="b-nota">Comentarios (opcional)</label><textarea class="textarea" id="b-nota" data-k="nota" maxlength="1000" placeholder="Ej: el vendedor solo puede después de las 14:00">${v('nota')}</textarea></div>
+            <input type="text" data-k="web" name="web" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
           </div>`;
       }
       return `
-        <h3>Envía tu solicitud</h3>
-        <p style="color:var(--muted)">Se abrirá WhatsApp con tu solicitud lista para enviar. Te confirmamos la hora y te mandamos los datos de la cuenta empresa para el abono.</p>
+        <h3>Reserva tu hora</h3>
+        <p style="color:var(--muted)">Al tocar "Reservar hora", el ${diaLargo(booking.date)} a las ${booking.time} queda guardado para ti y le avisamos a nuestro inspector.</p>
         <div class="remote-steps" style="margin-top:16px">
-          <div class="remote-step"><span class="ic">${ic('chat')}</span><div><b>1. Envías el mensaje</b><p>Con el auto y el día y hora que prefieres. Te confirmamos la hora.</p></div></div>
-          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(plan.precio * ABONO)}</b><p>El ${ABONO * 100} % del servicio, para dejar la hora reservada. ${ABONO_POLITICA}</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('calendar')}</span><div><b>1. Reservas la hora</b><p>La guardamos por 1 hora para que alcances a transferir.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(plan.precio * ABONO)}</b><p>El ${ABONO * 100} % del servicio. Te mandamos los datos de la cuenta empresa por WhatsApp. Si avisas con 24 horas, cambiamos la fecha o te lo devolvemos.</p></div></div>
           <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>3. Inspeccionamos</b><p>El saldo de ${clp(plan.precio - plan.precio * ABONO)} se paga el día de la inspección.</p></div></div>
         </div>
-        ${booking.sent ? `<p style="margin-top:16px;font-size:14px">¿No se abrió WhatsApp? <a href="${waLink(mensajeReserva())}" target="_blank" rel="noopener" style="color:var(--gold-700);font-weight:700">Toca aquí</a> o escríbenos al ${TEL}.</p>` : ''}`;
+        ${booking.error ? `<p class="booking-error" role="alert">${esc(booking.error)} <a href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>.</p>` : ''}`;
     };
 
     const summary = () => {
@@ -1014,16 +1092,23 @@
           <h3>Resumen</h3>
           <dl>
             <dt>Servicio</dt><dd>Inspección ${plan.nombre}</dd>
-            <dt>Día preferido</dt><dd>${booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
-            <dt>Hora preferida</dt><dd>${booking.time || '—'}</dd>
+            <dt>Día</dt><dd>${booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}</dd>
+            <dt>Hora</dt><dd>${booking.time || '—'}</dd>
             <dt>Vehículo</dt><dd>${esc(d.vehiculo || '—')}</dd>
             <dt>Lugar</dt><dd>${esc([d.direccion, d.comuna].filter(Boolean).join(', ') || '—')}</dd>
             <dt>Modalidad</dt><dd>${d.presente === 'no' ? 'Remota' : 'Presencial'}</dd>
             <dt>Valor</dt><dd>${clp(plan.precio)}</dd>
           </dl>
-          <div class="total"><span>Abono para reservar</span><span>${clp(plan.precio * ABONO)}</span></div>
-          ${d.comuna === 'Otra comuna' ? '<p style="margin:14px 0 0;font-size:13px;color:var(--muted)">Para otras comunas te confirmamos disponibilidad y traslado por WhatsApp.</p>' : ''}
+          <div class="total"><span>Abono para confirmar</span><span>${clp(plan.precio * ABONO)}</span></div>
+          ${d.comuna === 'Otra comuna' ? '<p style="margin:14px 0 0;font-size:13px;color:var(--muted)">Para otras comunas te confirmamos el traslado por WhatsApp.</p>' : ''}
         </aside>`;
+    };
+
+    const nav = () => {
+      if (booking.reserva) return `<span></span><a class="btn btn--gold" href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">${ic('chat')} Pedir datos para el abono</a>`;
+      const atras = booking.step > 0 ? `<button type="button" class="btn btn--outline" data-go="-1" ${booking.enviando ? 'disabled' : ''}>${ic('left')} Atrás</button>` : '<span></span>';
+      if (booking.step === 2) return `${atras}<button type="button" class="btn btn--gold" data-action="reservar" data-ev="agendar_enviado" ${booking.enviando ? 'disabled' : ''}>${ic('calendar')} ${booking.enviando ? 'Reservando…' : 'Reservar hora'}</button>`;
+      return `${atras}<button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>Continuar ${ic('arrow')}</button>`;
     };
 
     const draw = () => {
@@ -1032,16 +1117,36 @@
           <div class="panel">
             <div class="stepper">${STEPS.map((s, i) => `<div class="${i <= booking.step ? 'on' : ''}">${i + 1}. ${s}</div>`).join('')}</div>
             ${stepBody()}
-            <div class="wizard-nav">
-              ${booking.step > 0 ? `<button type="button" class="btn btn--outline" data-go="-1">${ic('left')} Atrás</button>` : '<span></span>'}
-              ${booking.step === 2
-                ? `<a class="btn btn--gold" data-action="send-booking" data-ev="agendar_enviado" href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">${ic('chat')} Enviar por WhatsApp</a>`
-                : `<button type="button" class="btn btn--gold" data-go="1" ${canNext() ? '' : 'disabled'}>Continuar ${ic('arrow')}</button>`}
-            </div>
-            ${booking.step === 2 ? '<p style="font-size:12.5px;color:var(--muted);margin:14px 0 0;text-align:right">Tus datos se usan solo para coordinar la inspección. <a href="#/privacidad" style="text-decoration:underline">Política de privacidad</a>.</p>' : ''}
+            <div class="wizard-nav">${nav()}</div>
+            ${booking.step === 2 && !booking.reserva ? `<p style="font-size:12.5px;color:var(--muted);margin:14px 0 0;text-align:right">Tus datos se usan solo para coordinar la inspección. <a href="#/privacidad" style="text-decoration:underline">Política de privacidad</a>.${RECAPTCHA_KEY ? ' Protegido por reCAPTCHA: se aplican la <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="text-decoration:underline">privacidad</a> y las <a href="https://policies.google.com/terms" target="_blank" rel="noopener" style="text-decoration:underline">condiciones</a> de Google.' : ''}</p>` : ''}
           </div>
           ${summary()}
         </div>`;
+    };
+
+    const reservar = async () => {
+      booking.enviando = true; booking.error = ''; draw();
+      try {
+        const r = await fetch(RESERVAR_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...booking.data, fecha: booking.date, hora: booking.time, captcha: await tokenCaptcha() }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) {
+          booking.error = j.error || 'No pudimos guardar tu reserva.';
+          if (/tomar|pasó|pronto/.test(booking.error)) {
+            // La hora ya no está: recarga la agenda y vuelve a elegir.
+            delete agenda[booking.date.slice(0, 7)]; booking.time = null; booking.step = 0; cargarVisibles();
+          }
+        } else {
+          booking.reserva = { codigo: j.codigo, vence: j.vence };
+          delete agenda[booking.date.slice(0, 7)];
+        }
+      } catch (e) {
+        booking.error = 'No hay conexión o el sistema de reservas no responde.';
+      }
+      booking.enviando = false; draw();
+      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     root.addEventListener('click', (e) => {
@@ -1049,13 +1154,14 @@
       const mo = t.closest('[data-month]'); if (mo) {
         const n = new Date(booking.month.getFullYear(), booking.month.getMonth() + +mo.dataset.month, 1);
         if (n >= new Date(today.getFullYear(), today.getMonth(), 1) && n <= new Date(today.getFullYear(), today.getMonth() + 2, 1)) booking.month = n;
+        cargarVisibles();
         return draw();
       }
-      const dt = t.closest('[data-date]'); if (dt) { booking.date = dt.dataset.date; booking.time = null; return draw(); }
+      const dt = t.closest('[data-date]'); if (dt) { booking.date = dt.dataset.date; booking.time = null; booking.error = ''; return draw(); }
       const tm = t.closest('[data-time]'); if (tm) { booking.time = tm.dataset.time; return draw(); }
-      if (t.closest('[data-action="send-booking"]')) { booking.sent = true; setTimeout(draw, 300); return; }
+      if (t.closest('[data-action="reservar"]')) { if (!booking.enviando) reservar(); return; }
       const go = t.closest('[data-go]'); if (go) {
-        booking.step = Math.min(2, Math.max(0, booking.step + +go.dataset.go)); draw();
+        booking.step = Math.min(2, Math.max(0, booking.step + +go.dataset.go)); booking.error = ''; draw();
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
@@ -1067,6 +1173,8 @@
     };
     root.addEventListener('input', onField);
     root.addEventListener('change', onField);
+    cargarVisibles();
+    cargarCaptcha();
     draw();
   }
 
@@ -1174,7 +1282,7 @@
 
   /* ---------------- política de privacidad ---------------- */
   // Fuente: docs/politica-privacidad.md (mantener ambos textos iguales).
-  const PRIVACIDAD_FECHA = '18 de noviembre de 2026';
+  const PRIVACIDAD_FECHA = '23 de noviembre de 2026';
   function viewPrivacidad() {
     const correo = '<a href="mailto:servicios.atlasmotors@gmail.com">servicios.atlasmotors@gmail.com</a>';
     return `
@@ -1192,7 +1300,8 @@
         <p>Contacto para temas de privacidad: ${correo}, WhatsApp <a href="${waLink()}" target="_blank" rel="noopener">${TEL}</a>.</p>
 
         <h2>2. Qué datos tratamos y para qué</h2>
-        <p><b>Si agendas una inspección o pides una búsqueda.</b> El sitio web no guarda tus datos: el formulario arma un mensaje que tú envías por WhatsApp. Con ese mensaje recibimos tu nombre, teléfono, comuna y los datos del auto, y los usamos para coordinar y prestar el servicio.</p>
+        <p><b>Si agendas una inspección.</b> Guardamos el día y la hora que reservas, tu nombre, teléfono, comuna, la dirección y los datos del auto que nos das, y los comentarios que escribas. Los usamos para coordinar y prestar la inspección, y solo los ve el equipo de Atlas Motors. En la agenda pública del sitio solo se ve que la hora está ocupada, nunca quién la reservó. Para evitar abusos, contamos cuántas reservas se hacen desde una misma conexión al día sin guardar tu dirección IP, y al reservar usamos reCAPTCHA de Google, que revisa señales del navegador para distinguir personas de programas automáticos.</p>
+        <p><b>Si pides una búsqueda.</b> El sitio web no guarda tus datos: el formulario arma un mensaje que tú envías por WhatsApp. Con ese mensaje recibimos tu nombre, teléfono, comuna y lo que buscas, y los usamos para prestar el servicio.</p>
         <p><b>Si inspeccionamos un auto para ti.</b> Registramos tu nombre y teléfono, los datos del vehículo (marca, modelo, año, patente y kilometraje), el lugar de la inspección, el resultado del checklist, comentarios, fotos y videos cortos del vehículo (con sonido, para registrar ruidos o fugas). Los usamos para hacer la inspección, preparar el informe y enviártelo, y para responder consultas o reclamos sobre el servicio.</p>
         <p><b>Si publicas tu auto en nuestro sitio.</b> Publicamos solo los datos del vehículo, el precio, la comuna, las fotos y videos que elijas y el resumen de la inspección. <b>No publicamos tu nombre, teléfono ni la patente.</b> Los interesados nos escriben a nosotros. Solo publicamos con tu autorización y puedes pedir que lo quitemos en cualquier momento.</p>
         <p><b>Si visitas atlasmotors.cl.</b> No usamos cookies ni herramientas de seguimiento de terceros. Para saber qué le sirve a la gente, contamos de forma anónima las visitas y algunos clics (por ejemplo, cuántas personas tocan WhatsApp o guardan un auto): solo sumamos totales por día, sin guardar tu IP ni nada que te identifique. Tu navegador guarda la fecha de tu primera y última visita (para distinguir visitas nuevas de las que vuelven) y los autos que marques como favoritos; eso queda solo en tu dispositivo y lo puedes borrar limpiando los datos del sitio. Nuestros proveedores de alojamiento (GitHub y Google) pueden registrar datos técnicos de la visita, como la dirección IP, para operar y proteger el servicio.</p>
@@ -1203,14 +1312,14 @@
         <h2>4. Con quién compartimos tus datos</h2>
         <p>No vendemos tus datos. Los compartimos solo con proveedores que nos ayudan a operar y que los tratan por encargo nuestro:</p>
         <ul>
-          <li><b>Google (Firebase / Google Cloud):</b> almacenamiento de inspecciones, fotos y videos. Los servidores están en Chile (Santiago) y en Estados Unidos.</li>
+          <li><b>Google (Firebase / Google Cloud):</b> almacenamiento de reservas, inspecciones, fotos y videos. Los servidores están en Chile (Santiago) y en Estados Unidos.</li>
           <li><b>GitHub:</b> alojamiento del sitio web (no recibe datos de clientes).</li>
           <li><b>WhatsApp (Meta):</b> comunicación contigo, cuando tú nos escribes.</li>
         </ul>
         <p>Algunos de estos proveedores están fuera de Chile. Trabajamos solo con proveedores que ofrecen garantías adecuadas de protección de datos, conforme a la ley.</p>
 
         <h2>5. Cuánto tiempo guardamos los datos</h2>
-        <p>Guardamos los datos de las inspecciones por 2 años desde la inspección, para responder consultas o reclamos sobre el servicio, y luego los eliminamos. Las publicaciones de autos se eliminan cuando el auto se vende o cuando lo pides. Los respaldos de seguridad se borran automáticamente a las 8 semanas.</p>
+        <p>Las reservas que no llegan a hacerse (sin abono o canceladas) las eliminamos dentro de 30 días. Guardamos los datos de las inspecciones por 2 años desde la inspección, para responder consultas o reclamos sobre el servicio, y luego los eliminamos. Las publicaciones de autos se eliminan cuando el auto se vende o cuando lo pides. Los respaldos de seguridad se borran automáticamente a las 8 semanas.</p>
 
         <h2>6. Cómo protegemos tus datos</h2>
         <p>Solo el equipo autorizado de Atlas Motors accede a los datos de clientes, con usuario y clave. Las conexiones son cifradas, aplicamos reglas de acceso en la base de datos y hacemos respaldos periódicos.</p>
