@@ -177,11 +177,7 @@
             <div><b>${ABONO * 100} %</b><span>de abono para reservar</span></div>
           </div>
         </div>
-        <div class="hero__visual">
-          <div class="scanner-art">${scannerArt()}</div>
-          <div class="float-chip float-chip--a"><span class="ic">${ic('shield')}</span><div><b>Medidor de pintura</b>Detecta repintados y choques</div></div>
-          <div class="float-chip float-chip--b"><span class="ic">${ic('doc')}</span><div><b>Informe PDF</b>Con fotos y costos de reparación</div></div>
-        </div>
+        <div class="hero__visual">${window.AtlasHistoria ? window.AtlasHistoria.html() : `<div class="scanner-art">${scannerArt()}</div>`}</div>
       </div>
     </section>
 
@@ -1394,7 +1390,7 @@
     contarPagina(parts);
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
-      case undefined: html = viewHome(); bind = bindAguila; break;
+      case undefined: html = viewHome(); bind = () => { if (window.AtlasHistoria) window.AtlasHistoria.bind(); bindAguila(); }; break;
       case 'autos': html = viewAutos(); bind = bindAutos; nav = 'autos'; break;
       case 'auto': html = viewAutoShell(); bind = () => bindAuto(parts[1]); nav = 'autos'; break;
       case 'informe': html = viewInforme(parts[1] || CARS[0].id); nav = 'inspeccion'; break;
