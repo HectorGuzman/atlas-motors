@@ -52,6 +52,13 @@ service firebase.storage {
                 && request.resource.contentType == 'video/mp4'));
     }
 
+    // Copias de las fotos y videos de @atlas.motors.cl. Públicas; las escribe y
+    // borra solo la función `instagram`.
+    match /instagram/{archivo} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /{todo=**} {
       allow read, write: if false;
     }

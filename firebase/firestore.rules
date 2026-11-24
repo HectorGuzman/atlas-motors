@@ -44,6 +44,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Copia de lo que se publica en @atlas.motors.cl (fotos, enlaces y textos que
+    // ya son públicos en Instagram). La escribe solo la función `instagram`.
+    match /instagram/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Datos de cada reserva (nombre, teléfono, auto, dirección): solo admin.
     match /reservas/{id} {
       allow read, create, update: if esAdmin();
