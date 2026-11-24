@@ -258,6 +258,7 @@
           <span class="ig-band__text"><b>Síguenos en Instagram</b><span>Inspecciones reales, hallazgos y consejos para comprar seguro. Mira nuestras historias en <b>@atlas.motors.cl</b></span></span>
           <span class="btn btn--gold">${ic('instagram')} Seguir</span>
         </a>
+        <div id="igFeed" class="ig-feed"></div>
       </div>
     </section>
 
@@ -338,6 +339,101 @@
     return autos;
   }
   const nombreAuto = (a) => [a.marca, a.modelo, a.anio].filter(Boolean).join(' ');
+
+  /* ---------------- Instagram: copia de @atlas.motors.cl ---------------- */
+  // La función `instagram` (functions/instagram) deja cada 20 min las últimas
+  // publicaciones e historias en instagram/feed, con las fotos copiadas a Storage.
+  const IG_FEED = `https://firestore.googleapis.com/v1/projects/atlas-motors-cl/databases/(default)/documents/instagram/feed?key=${FS_KEY}`;
+  const IG_MEDIA = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/atlas-motors-cl-fotos\/o\/instagram%2F[^"'<>\s]*$/;
+  const IG_LINK = /^https:\/\/(www\.)?instagram\.com\/[^"'<>\s]*$/;
+  const igUrl = (u, re) => (typeof u === 'string' && re.test(u) ? u : '');
+  let igCarga = null;
+  function cargarInstagram() {
+    igCarga = igCarga || fetch(IG_FEED).then((r) => (r.ok ? r.json() : null)).then((d) => {
+      const f = d && d.fields ? fsObj(d.fields) : {};
+      const ahora = Date.now();
+      return {
+        posts: lista(f.posts).filter((p) => p && igUrl(p.img, IG_MEDIA)).slice(0, 8).map((p) => ({
+          img: p.img, link: igUrl(p.link, IG_LINK) || IG, video: p.tipo === 'video', carrusel: p.tipo === 'carrusel', texto: txt(p.texto, 300),
+        })),
+        historias: lista(f.historias).filter((h) => h && Date.parse(h.fecha) > ahora - 864e5 && (igUrl(h.img, IG_MEDIA) || igUrl(h.video, IG_MEDIA))).slice(0, 30).map((h) => ({
+          img: igUrl(h.img, IG_MEDIA), video: igUrl(h.video, IG_MEDIA), link: igUrl(h.link, IG_LINK) || IG, fecha: Date.parse(h.fecha),
+        })),
+      };
+    }).catch(() => ({ posts: [], historias: [] }));
+    return igCarga;
+  }
+  const haceCuanto = (ms) => {
+    const h = Math.floor((Date.now() - ms) / 36e5);
+    return h < 1 ? 'Recién' : `Hace ${h} h`;
+  };
+  async function bindInstagram() {
+    const box = $('#igFeed'); if (!box) return;
+    const { posts, historias } = await cargarInstagram();
+    if (!document.body.contains(box) || (!posts.length && !historias.length)) return;
+    box.innerHTML = `
+      ${historias.length ? `<div class="ig-stories" role="list" aria-label="Historias de Instagram">${historias.map((h, i) => `
+        <button type="button" class="ig-story" role="listitem" data-story="${i}" aria-label="Ver historia ${i + 1} de ${historias.length}">
+          <span class="ig-story__ring"><img src="${esc(h.img || 'assets/img/aguila.png')}" alt="" loading="lazy"></span>
+          <span class="ig-story__t">${haceCuanto(h.fecha)}</span>
+        </button>`).join('')}</div>` : ''}
+      ${posts.length ? `<div class="ig-grid">${posts.map((p) => `
+        <a class="ig-post" href="${esc(p.link)}" target="_blank" rel="noopener" data-ev="instagram_post">
+          <img src="${esc(p.img)}" alt="${esc(p.texto.split('\n')[0].slice(0, 100) || 'Publicación de Atlas Motors en Instagram')}" loading="lazy">
+          ${p.video ? `<span class="ig-post__tag">${ic('video')}</span>` : p.carrusel ? `<span class="ig-post__tag">${ic('camera')}</span>` : ''}
+        </a>`).join('')}</div>` : ''}`;
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-story]');
+      if (b) verHistorias(historias, Number(b.dataset.story));
+    });
+  }
+  // Visor de historias: avanza solo (fotos 5 s, videos hasta que terminan).
+  function verHistorias(lista, inicio) {
+    let i = inicio, timer = null;
+    const v = document.createElement('div');
+    v.className = 'ig-viewer';
+    v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true'); v.setAttribute('aria-label', 'Historias de Atlas Motors');
+    const volverA = document.activeElement;
+    const cerrar = () => { clearTimeout(timer); v.remove(); document.removeEventListener('keydown', teclas); document.body.style.overflow = ''; volverA && volverA.focus && volverA.focus(); };
+    const ir = (n) => { if (n < 0) n = 0; if (n >= lista.length) return cerrar(); i = n; pintar(); };
+    const teclas = (e) => { if (e.key === 'Escape') cerrar(); else if (e.key === 'ArrowRight') ir(i + 1); else if (e.key === 'ArrowLeft') ir(i - 1); };
+    function pintar() {
+      clearTimeout(timer);
+      const h = lista[i];
+      v.innerHTML = `
+        <div class="ig-viewer__box">
+          <div class="ig-viewer__bars">${lista.map((_, n) => `<span class="${n < i ? 'done' : n === i ? 'now' : ''}"><i></i></span>`).join('')}</div>
+          <div class="ig-viewer__head"><span class="ig-viewer__user">${ic('instagram')} atlas.motors.cl · ${haceCuanto(h.fecha)}</span>
+            <button type="button" class="ig-viewer__x" aria-label="Cerrar">${ic('x')}</button></div>
+          ${h.video ? `<video src="${esc(h.video)}" ${h.img ? `poster="${esc(h.img)}"` : ''} autoplay playsinline></video>` : `<img src="${esc(h.img)}" alt="Historia de Atlas Motors">`}
+          <button type="button" class="ig-viewer__nav ig-viewer__nav--prev" aria-label="Anterior"></button>
+          <button type="button" class="ig-viewer__nav ig-viewer__nav--next" aria-label="Siguiente"></button>
+          <a class="btn btn--gold ig-viewer__cta" href="${esc(h.link)}" target="_blank" rel="noopener">${ic('instagram')} Ver en Instagram</a>
+        </div>`;
+      const bar = v.querySelector('.now i');
+      const vid = v.querySelector('video');
+      if (vid) {
+        vid.addEventListener('timeupdate', () => { if (vid.duration) bar.style.width = `${(vid.currentTime / vid.duration) * 100}%`; });
+        vid.addEventListener('ended', () => ir(i + 1));
+        vid.play().catch(() => { vid.muted = true; vid.play().catch(() => {}); });
+      } else {
+        bar.style.transition = 'width 5s linear';
+        requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = '100%'; }));
+        timer = setTimeout(() => ir(i + 1), 5000);
+      }
+      v.querySelector('.ig-viewer__x').focus();
+    }
+    v.addEventListener('click', (e) => {
+      if (e.target === v || e.target.closest('.ig-viewer__x')) cerrar();
+      else if (e.target.closest('.ig-viewer__nav--prev')) ir(i - 1);
+      else if (e.target.closest('.ig-viewer__nav--next')) ir(i + 1);
+    });
+    document.addEventListener('keydown', teclas);
+    window.addEventListener('hashchange', cerrar, { once: true });
+    document.body.style.overflow = 'hidden';
+    document.body.appendChild(v);
+    pintar();
+  }
 
   /* ---------------- favoritos (solo en este navegador, sin cuenta) ---------------- */
   const FAV_KEY = 'atlas-favoritos';
@@ -1390,7 +1486,7 @@
     contarPagina(parts);
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
-      case undefined: html = viewHome(); bind = () => { if (window.AtlasHistoria) window.AtlasHistoria.bind(); bindAguila(); }; break;
+      case undefined: html = viewHome(); bind = () => { if (window.AtlasHistoria) window.AtlasHistoria.bind(); bindAguila(); bindInstagram(); }; break;
       case 'autos': html = viewAutos(); bind = bindAutos; nav = 'autos'; break;
       case 'auto': html = viewAutoShell(); bind = () => bindAuto(parts[1]); nav = 'autos'; break;
       case 'informe': html = viewInforme(parts[1] || CARS[0].id); nav = 'inspeccion'; break;
