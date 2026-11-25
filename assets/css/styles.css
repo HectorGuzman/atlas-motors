@@ -1124,13 +1124,6 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .mk-porque h2 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 700; margin: 0 0 12px; letter-spacing: -.02em; }
 .mk-porque h2 span { color: #8fdc8f; display: block; }
 .mk-porque p { color: #c9d8cc; margin: 0 0 22px; max-width: 420px; }
-.mk-proceso { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; position: relative; }
-.mk-proceso::before { content: ''; position: absolute; top: 18px; left: 12.5%; right: 12.5%; height: 2px; background: linear-gradient(90deg, #43a047, #8fdc8f); }
-.mk-proceso li { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
-.mk-proceso__n { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #43a047; color: #fff; font-weight: 700; box-shadow: 0 0 0 6px #0f2b1a; }
-.mk-proceso .icon { width: 38px; height: 38px; stroke-width: 1.5; margin: 14px 0 4px; color: #fff; }
-.mk-proceso b { font-weight: 600; font-size: 15.5px; line-height: 1.25; }
-.mk-proceso small { color: #9fb8a6; font-size: 13px; }
 
 .hero--inspeccion { border-top: 1px solid rgba(255,255,255,.05); }
 .hero--inspeccion .hero__titulo { font-size: clamp(32px, 4.4vw, 54px); }
@@ -1175,8 +1168,6 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
   .mk-promo { min-height: 0; }
   .mk-trust .ic .icon { width: 28px; height: 28px; }
   .mk-trust p { font-size: 13px; }
-  .mk-proceso { grid-template-columns: 1fr 1fr; row-gap: 26px; }
-  .mk-proceso::before { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .mk-haz, .mk-luz { animation: none; } }
 /* Portada: menos negro, más verde Atlas */
@@ -1225,10 +1216,9 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
   border-top: 1px solid rgba(255,255,255,.05); border-bottom: 1px solid rgba(255,255,255,.05); }
 .mk-porque h2 span { color: var(--oro); }
 .mk-porque p { color: #aab3ad; }
-.mk-proceso__n { box-shadow: 0 0 0 6px #0b0d0c; }
 
 /* ---------- Portada compacta (como la referencia): imagen a todo el ancho, poco alto ---------- */
-.mk-portada { position: relative; isolation: isolate; overflow: hidden; color: #fff; background: #070908 url(../img/hero-costanera.webp) right 62% / cover no-repeat; }
+.mk-portada { position: relative; isolation: isolate; overflow: hidden; color: #fff; background: #070908 url(../img/hero-autos.webp) right 62% / cover no-repeat; }
 .mk-portada::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(90deg, rgba(7,9,8,.92) 0%, rgba(7,9,8,.78) 30%, rgba(7,9,8,.25) 52%, rgba(7,9,8,0) 64%),
               linear-gradient(0deg, rgba(7,9,8,.85) 0%, rgba(7,9,8,0) 26%), linear-gradient(180deg, rgba(7,9,8,.5), rgba(7,9,8,0) 18%); }
@@ -1252,8 +1242,8 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .mk-oscuro .mk-buscar .btn { background: linear-gradient(180deg, var(--oro-hi), var(--oro) 60%, var(--oro-lo)); color: #16130a; }
 @media (max-width: 900px) { .mk-oscuro .mk-buscar__sel { background: rgba(255,255,255,.06); } }
 @media (max-width: 700px) {
-  .mk-portada { background-position: 85% bottom; background-size: auto 62%; }
-  .mk-portada::before { background: linear-gradient(180deg, #070908 0%, #070908 40%, rgba(7,9,8,.2) 62%, rgba(7,9,8,0) 75%, rgba(7,9,8,.6) 100%); }
+  .mk-portada { background-position: 88% bottom; background-size: auto 46%; }
+  .mk-portada::before { background: linear-gradient(180deg, #070908 0%, #070908 54%, rgba(7,9,8,.35) 63%, rgba(7,9,8,0) 74%, rgba(7,9,8,.6) 100%); }
   .mk-portada__in { align-items: flex-start; min-height: 600px; padding-top: 34px; }
   .mk-portada h1 { font-size: clamp(29px, 9.1vw, 38px); }
   .mk-portada__lema { font-size: 17px; }
@@ -1264,7 +1254,7 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .mk-portada__fondo, .mk-portada__img { display: none; }
 @media (min-width: 701px) {
   .mk-portada { background: #070908; }
-  .mk-portada__fondo { display: block; position: absolute; inset: -40px; z-index: -3; background: url(../img/hero-costanera.webp) right 60% / cover no-repeat; filter: blur(28px) brightness(.55) saturate(1.1); }
+  .mk-portada__fondo { display: block; position: absolute; inset: -40px; z-index: -3; background: url(../img/hero-autos.webp) right 60% / cover no-repeat; filter: blur(28px) brightness(.55) saturate(1.1); }
   .mk-portada__img { display: block; position: absolute; z-index: -2; top: 0; bottom: 0; right: max(0px, calc((100% - 2000px) / 2)); height: 100%; width: auto; max-width: none;
     -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 92%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 92%, transparent 100%); }
   .mk-portada::before { background: linear-gradient(90deg, rgba(7,9,8,.85) 0%, rgba(7,9,8,.6) 32%, rgba(7,9,8,0) 55%), linear-gradient(0deg, rgba(7,9,8,.7) 0%, rgba(7,9,8,0) 22%); }
@@ -1284,3 +1274,122 @@ input[type=range] { width: 100%; accent-color: var(--gold); }
 .nav a.active:not(.btn) .nav__ic { opacity: 1; color: var(--accent-text); }
 .nav .btn .nav__ic { opacity: 1; }
 @media (max-width: 900px) { .nav__ic { width: 19px; height: 19px; } .nav a { gap: 12px; } }
+
+/* ---------- Atlas Scan (página de inspección): movimientos continuos ---------- */
+.scanner-art:has(.as-svg) { background: #08100b; }
+.as-svg .as-flow { animation: as-flow .9s linear infinite; }
+.as-svg .as-led { animation: as-led 1.1s steps(2, jump-none) infinite; }
+.as-svg .as-ping { transform-box: fill-box; transform-origin: center; animation: as-ping 1.6s ease-out infinite; }
+.as-svg .as-spin { transform-box: fill-box; transform-origin: center; animation: as-spin .8s linear infinite; }
+.as-svg .as-wave { animation: as-wave 3.6s linear infinite; }
+.as-svg .as-beam-y { animation: as-beam-y 2.2s ease-in-out infinite alternate; }
+.as-svg .as-rpm1, .as-svg .as-rpm2, .as-svg .as-rpm3 { animation: as-rpm 1.8s steps(1, end) infinite; }
+.as-svg .as-rpm2 { animation-delay: -1.2s; }
+.as-svg .as-rpm3 { animation-delay: -.6s; }
+@keyframes as-flow { to { stroke-dashoffset: 30; } }
+@keyframes as-led { 0% { opacity: 1; } 100% { opacity: .25; } }
+@keyframes as-ping { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.4); opacity: 0; } }
+@keyframes as-spin { to { transform: rotate(360deg); } }
+@keyframes as-wave { to { transform: translateX(-230px); } }
+@keyframes as-beam-y { from { transform: translateY(0); } to { transform: translateY(150px); } }
+@keyframes as-rpm { 0% { opacity: 1; } 33.33% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .as-svg * { animation: none !important; } }
+
+/* ---------- "¿Por qué comprar en Atlas Motors?": recorrido animado (viaje.js) ---------- */
+.mk-viaje { --p: 3; position: relative; padding-top: 36px; }
+.mk-viaje__pista { position: absolute; top: 55px; left: 12.5%; right: 12.5%; height: 2px; pointer-events: none; }
+.mk-viaje__linea { position: absolute; inset: 0; background: rgba(143,220,143,.16); border-radius: 2px; }
+.mk-viaje__fill { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p) / 3 * 100%); border-radius: 2px;
+  background: linear-gradient(90deg, #2e7d32, #8fdc8f); box-shadow: 0 0 12px rgba(143,220,143,.7); transition: width .9s cubic-bezier(.6,0,.2,1); }
+.mk-viaje__auto { position: absolute; top: -40px; left: calc(var(--p) / 3 * 100%); width: 40px; height: 26px; margin-left: -20px; display: grid; place-items: center;
+  border-radius: 9px; background: #0f1a13; border: 1px solid rgba(143,220,143,.5); box-shadow: 0 6px 18px rgba(0,0,0,.5), 0 0 16px rgba(67,160,71,.45);
+  transition: left .9s cubic-bezier(.6,0,.2,1); }
+.mk-viaje__auto::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 2px; height: 6px; margin-left: -1px; background: rgba(143,220,143,.6); }
+.mk-viaje__auto svg { width: 22px; height: 22px; fill: none; stroke: #8fdc8f; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mk-viaje.vivo .mk-viaje__auto svg { animation: vj-rodar .45s ease-in-out infinite alternate; }
+@keyframes vj-rodar { from { transform: translateY(0); } to { transform: translateY(-1.5px); } }
+
+.mk-viaje__pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.mk-paso__btn { all: unset; box-sizing: border-box; position: relative; isolation: isolate; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px; cursor: pointer; padding-bottom: 18px; }
+.mk-paso__btn:focus-visible { outline: 2px solid #8fdc8f; outline-offset: 4px; border-radius: 16px; }
+.mk-paso__btn::before { content: ''; position: absolute; inset: 52px 0 0; border-radius: 16px; border: 1px solid transparent; transition: background .5s, border-color .5s, box-shadow .5s; z-index: -1; }
+.mk-paso__n { position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #fff; background: #43a047;
+  box-shadow: 0 0 0 6px #0b0d0c; transition: background .5s, color .5s; margin-bottom: 14px; }
+.mk-paso__arte { display: block; width: 100%; max-width: 150px; margin: 6px 0 4px; transition: opacity .5s, filter .5s; }
+.mk-paso__arte > svg { display: block; width: 100%; height: auto; overflow: visible; }
+.mk-paso b { font-weight: 600; font-size: 15.5px; line-height: 1.25; color: #fff; padding: 0 6px; transition: color .5s; }
+.mk-paso small { color: #9fb8a6; font-size: 13px; line-height: 1.35; padding: 0 8px; }
+.mk-paso__tiempo { position: absolute; left: 18px; right: 18px; bottom: 8px; height: 3px; border-radius: 3px; background: rgba(143,220,143,.14); overflow: hidden; opacity: 0; transition: opacity .3s; }
+.mk-paso__tiempo i { display: block; height: 100%; background: linear-gradient(90deg, #43a047, #8fdc8f); transform-origin: left; transform: scaleX(0); }
+
+/* estados: pendiente (apagado) · hecho · ahora (encendido y animado) */
+.mk-viaje.vivo .mk-paso:not(.hecho):not(.ahora) .mk-paso__n { background: #141c17; color: #6f8a78; box-shadow: 0 0 0 6px #0b0d0c, inset 0 0 0 1px #2f3f33; }
+.mk-viaje.vivo .mk-paso:not(.ahora) .mk-paso__arte { opacity: .45; filter: saturate(.3); }
+.mk-viaje.vivo .mk-paso:not(.ahora) b { color: #c9d4cc; }
+.mk-paso.ahora .mk-paso__btn::before { background: linear-gradient(180deg, rgba(67,160,71,.16), rgba(67,160,71,.04)); border-color: rgba(143,220,143,.35); box-shadow: 0 18px 40px -18px rgba(67,160,71,.55); }
+.mk-viaje.vivo .mk-paso.ahora .mk-paso__n::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #8fdc8f; animation: vj-anillo 1.6s ease-out infinite; }
+@keyframes vj-anillo { from { transform: scale(1); opacity: .9; } to { transform: scale(1.9); opacity: 0; } }
+.mk-viaje.vivo .mk-paso.ahora .mk-paso__tiempo { opacity: 1; }
+.mk-viaje.vivo .mk-paso.ahora .mk-paso__tiempo i { animation: vj-tiempo 3.4s linear both; }
+@keyframes vj-tiempo { to { transform: scaleX(1); } }
+.mk-viaje.pausa .mk-paso.ahora .mk-paso__tiempo i { animation-play-state: paused; }
+.mk-viaje.vivo .mk-paso:not(.ahora):hover .mk-paso__arte { opacity: .75; }
+
+/* ilustraciones */
+.mk-paso__arte .vj-trazo { fill: rgba(67,160,71,.1); stroke: #8fdc8f; stroke-width: 2; stroke-linejoin: round; }
+.mk-paso__arte .vj-fino { stroke-width: 1.4; fill: rgba(143,220,143,.12); }
+.mk-paso__arte .vj-grueso { stroke-width: 4; }
+.mk-paso__arte .vj-rueda { fill: #0b0d0c; stroke: #8fdc8f; stroke-width: 2; }
+.mk-paso__arte .vj-centro { fill: #8fdc8f; }
+.mk-paso__arte .vj-haz { opacity: 0; }
+.mk-paso__arte .vj-luz { fill: #e4ffe5; filter: drop-shadow(0 0 3px #8fdc8f); }
+.mk-paso__arte .vj-estela { fill: rgba(143,220,143,.18); }
+.mk-paso__arte .vj-etapa { fill: #8fdc8f; }
+.mk-paso__arte .vj-caja { fill: #0f1a13; stroke: #4c7a55; stroke-width: 1.5; }
+.mk-paso__arte .vj-pantalla { fill: #07100b; stroke: #22382a; }
+.mk-paso__arte .vj-onda { fill: none; stroke: #8fdc8f; stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(143,220,143,.8)); }
+.mk-paso__arte .vj-pista { fill: #1d2b22; }
+.mk-paso__arte .vj-barra { fill: #43a047; transform-box: fill-box; transform-origin: left; }
+.mk-paso__arte .vj-cable { fill: none; stroke: #4c7a55; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 6; }
+.mk-paso__arte .vj-linea { fill: #8fdc8f; transform-box: fill-box; transform-origin: left; }
+.mk-paso__arte .vj-foto rect { fill: #1d3324; stroke: #4c7a55; }
+.mk-paso__arte .vj-foto path { fill: none; stroke: #8fdc8f; stroke-width: 1.2; stroke-linejoin: round; }
+.mk-paso__arte .vj-foto, .mk-paso__arte .vj-sello, .mk-paso__arte .vj-insignia { transform-box: fill-box; transform-origin: center; }
+.mk-paso__arte .vj-sello circle { fill: #43a047; } .mk-paso__arte .vj-sello path { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mk-paso__arte .vj-foto-auto { fill: #16261b; }
+.mk-paso__arte .vj-texto { fill: #4c6a55; } .mk-paso__arte .vj-oro { fill: var(--oro); }
+.mk-paso__arte .vj-insignia rect { fill: #43a047; } .mk-paso__arte .vj-insignia path { fill: #fff; }
+.mk-paso__arte .vj-insignia text { fill: #fff; font: 700 8px Inter, sans-serif; }
+.mk-paso__arte .vj-brillo { opacity: 0; } .mk-paso__arte .vj-brillo rect { fill: rgba(255,255,255,.12); }
+
+/* lo que pasa mientras el paso está encendido */
+.mk-viaje.vivo .mk-paso:not(.hecho):not(.ahora) .vj-etapa { fill: #26332a; }
+.mk-viaje.vivo .mk-paso:not(.hecho):not(.ahora) :is(.vj-barra, .vj-linea) { transform: scaleX(0); }
+.mk-viaje.vivo .mk-paso:not(.hecho):not(.ahora) :is(.vj-foto, .vj-sello, .vj-insignia) { opacity: 0; }
+.mk-viaje.vivo .ahora .vj-haz { animation: vj-barrer 1.5s ease-in-out infinite alternate; }
+@keyframes vj-barrer { 0% { opacity: 1; transform: translateX(0); } 100% { opacity: 1; transform: translateX(118px); } }
+.mk-viaje.vivo .ahora .vj-etapa { animation: vj-encender .35s var(--d) both; }
+@keyframes vj-encender { from { fill: #26332a; } 60% { fill: #e4ffe5; } to { fill: #8fdc8f; } }
+.mk-viaje.vivo .ahora .vj-rueda { animation: vj-pulso 1.5s ease-in-out infinite; }
+@keyframes vj-pulso { 50% { stroke: #e4ffe5; } }
+.mk-viaje.vivo .ahora .vj-onda { animation: vj-onda 1.8s linear infinite; }
+@keyframes vj-onda { to { transform: translateX(-60px); } }
+.mk-viaje.vivo .ahora :is(.vj-barra, .vj-linea) { animation: vj-llenar .7s cubic-bezier(.3,.7,.3,1) var(--d) both; }
+@keyframes vj-llenar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.mk-viaje.vivo .ahora .vj-cable { animation: vj-datos .6s linear infinite; stroke: #8fdc8f; }
+@keyframes vj-datos { to { stroke-dashoffset: -16; } }
+.mk-viaje.vivo .ahora :is(.vj-foto, .vj-sello, .vj-insignia) { animation: vj-pop .45s cubic-bezier(.2,.8,.3,1.4) var(--d) both; }
+@keyframes vj-pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+.mk-viaje.vivo .ahora .vj-brillo { animation: vj-brillo 1.1s ease-in-out 1.1s both; }
+@keyframes vj-brillo { from { opacity: 1; transform: translateX(0); } to { opacity: 1; transform: translateX(190px); } }
+
+@media (max-width: 700px) {
+  .mk-viaje { padding-top: 0; }
+  .mk-viaje__pista { display: none; }
+  .mk-viaje__pasos { grid-template-columns: 1fr 1fr; row-gap: 14px; }
+  .mk-paso__btn::before { inset: 0; }
+  .mk-paso__btn { padding-top: 14px; }
+  .mk-paso__n { margin-bottom: 4px; }
+  .mk-paso b { font-size: 14.5px; }
+  .mk-paso small { font-size: 12.5px; }
+}

@@ -2,7 +2,7 @@
 
 Sitio de **Atlas Motors**: inspección precompra de vehículos y búsqueda personalizada en la Región de Coquimbo. Publicado en GitHub Pages: https://www.atlasmotors.cl/
 
-Sin backend: las solicitudes (agenda y búsqueda) se envían por WhatsApp al +56 9 3559 5554, con el mensaje ya armado. El abono del 50 % se paga por transferencia, coordinada por WhatsApp.
+Sin backend: las solicitudes (agenda y búsqueda) se envían por WhatsApp al +56 9 3559 5554, con el mensaje ya armado. El abono de $25.000 (sobre un valor de $49.990) se paga por transferencia, coordinada por WhatsApp.
 
 ## Secciones
 
