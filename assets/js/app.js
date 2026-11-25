@@ -157,69 +157,6 @@
 
   /* ---------------- vistas ---------------- */
   /* ---------------- portada: marketplace ---------------- */
-  // Paisaje dibujado de la costa de La Serena y Coquimbo al atardecer: el Faro
-  // Monumental, la avenida del Mar con palmeras y los cerros de Coquimbo con la Cruz.
-  const paisaje = () => `
-    <svg class="mk-paisaje" viewBox="0 0 900 520" preserveAspectRatio="xMaxYMax slice" aria-hidden="true">
-      <defs>
-        <linearGradient id="mkCielo" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#0f2a19"/><stop offset=".55" stop-color="#245a35"/><stop offset=".8" stop-color="#7fae6a"/><stop offset="1" stop-color="#e8d9a0"/>
-        </linearGradient>
-        <radialGradient id="mkSol" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff6d8" stop-opacity=".95"/><stop offset=".35" stop-color="#f3df9c" stop-opacity=".55"/><stop offset="1" stop-color="#f3df9c" stop-opacity="0"/></radialGradient>
-        <linearGradient id="mkMar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4d8a64"/><stop offset="1" stop-color="#173a25"/></linearGradient>
-        <linearGradient id="mkHaz" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff8dc" stop-opacity=".55"/><stop offset="1" stop-color="#fff8dc" stop-opacity="0"/></linearGradient>
-      </defs>
-      <rect width="900" height="520" fill="url(#mkCielo)"/>
-      <circle cx="455" cy="336" r="210" fill="url(#mkSol)"/>
-      <circle cx="455" cy="344" r="24" fill="#fff4cf" opacity=".95"/>
-      <!-- cerros de Coquimbo con la Cruz del Tercer Milenio -->
-      <path d="M0 318 C70 290 130 286 180 300 C230 270 290 262 340 288 C380 268 430 266 480 296 L480 360 L0 360Z" fill="#2f6a43" opacity=".5"/>
-      <path d="M0 340 C80 314 150 318 200 330 C250 306 300 300 360 322 L360 370 L0 370Z" fill="#1f4e30" opacity=".85"/>
-      <!-- cerro de Coquimbo con la Cruz del Tercer Milenio -->
-      <path d="M420 356 C446 330 470 300 506 290 C530 286 548 300 566 322 C578 338 590 350 604 356Z" fill="#1d4a2d"/>
-      <path d="M420 356 C446 330 470 300 506 290 C512 289 518 289 524 290 C494 302 470 330 456 356Z" fill="#245a37"/>
-      <g fill="#cfe2c5" opacity=".55">${[[466, 336], [478, 326], [494, 334], [532, 316], [546, 330], [558, 342], [516, 340]].map(([x, y]) => `<rect x="${x}" y="${y}" width="3" height="3"/>`).join('')}</g>
-      <g transform="translate(522 0)">
-        <ellipse cx="0" cy="258" rx="40" ry="50" fill="#fff6d8" opacity=".12"/>
-        <rect x="-14" y="282" width="28" height="10" rx="2" fill="#e6ece0"/>
-        <rect x="-14" y="282" width="14" height="10" rx="2" fill="#c3cfbe"/>
-        <path d="M-7 282 L-6 206 L6 206 L7 282Z" fill="#f7f8f1"/>
-        <path d="M-7 282 L-6 206 L0 206 L0 282Z" fill="#cdd8c8"/>
-        <path d="M-24 226 L24 226 L24 236 L-24 236Z" fill="#f7f8f1"/>
-        <path d="M-24 231 L24 231 L24 236 L-24 236Z" fill="#cdd8c8"/>
-        <rect x="-2" y="242" width="4" height="30" rx="2" fill="#9fb59c" opacity=".7"/>
-      </g>
-      <!-- mar -->
-      <rect y="352" width="900" height="70" fill="url(#mkMar)"/>
-      <g stroke="#fff3c9" stroke-linecap="round" opacity=".6" stroke-width="2"><path d="M370 364h170M405 376h100M430 388h50"/></g>
-      <g stroke="#cfe6c8" stroke-linecap="round" opacity=".18" stroke-width="2"><path d="M60 372h90M200 384h70M640 370h60M760 380h90"/></g>
-      <!-- haz del faro -->
-      <path class="mk-haz" d="M590 236 L300 186 L300 262Z" fill="url(#mkHaz)"/>
-      <!-- costanera: edificios con luces y palmeras -->
-      <path d="M300 424 C470 408 680 402 900 406 L900 520 L300 520Z" fill="#143520"/>
-      ${[[640, 318, 34, 42], [678, 300, 30, 60], [712, 326, 40, 34], [790, 290, 34, 70], [828, 312, 44, 48], [876, 304, 30, 56]].map(([x, y, w, h]) => `
-        <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="#1c4a2d"/>
-        <g fill="#f3df9c" opacity=".55">${Array.from({ length: Math.floor((h - 8) / 12) }, (_, f) => Array.from({ length: Math.floor((w - 6) / 9) }, (_, c) => ((f * 7 + c * 3 + x) % 5 < 2 ? `<rect x="${x + 5 + c * 9}" y="${y + 6 + f * 12}" width="4" height="5"/>` : '')).join('')).join('')}</g>`).join('')}
-      ${[[500, 330, .8], [540, 342, .62], [742, 326, .75], [905, 318, .8]].map(([x, y, k]) => `
-        <g fill="#123220" transform="translate(${x} ${y}) scale(${k})"><path d="M-3 0 Q-6 50 -2 110 L4 110 Q4 50 3 0Z"/>
-          <path d="M0 0 Q-26 -8 -44 10 Q-22 -2 0 4Z M0 0 Q26 -10 46 8 Q22 -2 0 4Z M0 0 Q-14 -22 -36 -24 Q-14 -12 0 3Z M0 0 Q14 -24 36 -22 Q14 -12 0 3Z M0 0 Q-2 -24 6 -36 Q4 -16 2 2Z"/></g>`).join('')}
-      <!-- Faro Monumental de La Serena -->
-      <g transform="translate(590 0)">
-        <ellipse cx="0" cy="424" rx="70" ry="6" fill="#0c2415" opacity=".6"/>
-        <path d="M-40 422 L-33 398 L33 398 L40 422Z" fill="#d9e2d2"/>
-        <path d="M-40 422 L-33 398 L0 398 L0 422Z" fill="#b9c6b4"/>
-        <path d="M-23 398 L-16 262 L16 262 L23 398Z" fill="#f6f7ef"/>
-        <path d="M-23 398 L-16 262 L0 262 L0 398Z" fill="#c9d3c3" opacity=".6"/>
-        <path d="M-20.4 352 L20.4 352 L19.5 336 L-19.5 336Z M-18.4 302 L18.4 302 L17.6 288 L-17.6 288Z" fill="#a33b2f"/>
-        <rect x="-24" y="250" width="48" height="12" rx="2" fill="#26352b"/>
-        <g stroke="#26352b" stroke-width="2"><path d="M-24 250 v-6 M-12 250 v-6 M0 250 v-6 M12 250 v-6 M24 250 v-6 M-26 244 h52"/></g>
-        <rect x="-13" y="222" width="26" height="22" fill="#26352b"/>
-        <rect x="-9" y="226" width="18" height="15" fill="#fff3c4" class="mk-luz"/>
-        <path d="M-17 222 L0 204 L17 222Z" fill="#a33b2f"/>
-        <g fill="#26352b"><rect x="-6" y="366" width="12" height="20" rx="6"/><rect x="-4" y="306" width="8" height="13" rx="4"/></g>
-      </g>
-    </svg>`;
-
   // Buscador de autos (portada y listado). Las marcas y comunas salen de los autos publicados.
   const buscador = (p = {}) => `
     <form class="mk-buscar" data-buscar role="search" aria-label="Buscar autos en venta">
@@ -292,20 +229,17 @@
   function viewHome() {
     const completa = PLANES[0];
     return `
-    <section class="mk-hero">
-      ${paisaje()}
-      <div class="container mk-hero__inner">
-        <div class="mk-hero__text">
-          <h1>El marketplace <span>más seguro</span> de autos <small>en la Región de Coquimbo</small></h1>
-          <p class="mk-sello">${ic('shield')} <span>Todos los autos <b>inspeccionados por Atlas</b></span></p>
-          <p class="mk-hero__sub">Compra y vende con tranquilidad, respaldo y transparencia. Cada auto trae su informe de inspección, fotos y videos reales.</p>
-        </div>
-        <div class="mk-hero__aguila" aria-hidden="true">
-          <img src="assets/img/aguila.png" alt="" width="403" height="640" fetchpriority="high">
-          <span class="mk-firma">Compra seguro,<br>con el respaldo de Atlas</span>
+    <section class="mk-portada">
+      <div class="mk-portada__fondo" aria-hidden="true"></div>
+      <img class="mk-portada__img" src="assets/img/hero-costanera.webp" alt="" width="1672" height="941" fetchpriority="high" aria-hidden="true">
+      <div class="mk-portada__verde" aria-hidden="true"></div>
+      <div class="container mk-portada__in">
+        <div class="mk-portada__text">
+          <h1><span>No compres a ciegas.</span><br><span>Compra con <span class="oro">respaldo.</span></span></h1>
+          <p class="mk-portada__lema"><b>El primer marketplace de autos</b> 100% inspeccionados en la Región de Coquimbo.</p>
+          <a class="btn mk-cta" href="#/autos">${ic('search')} Explorar vehículos ${ic('arrow')}</a>
         </div>
       </div>
-      <div class="container mk-hero__buscar">${buscador()}</div>
     </section>
 
     <div class="mk-trust">
@@ -317,12 +251,13 @@
       </div>
     </div>
 
-    <section class="claro mk-destacados">
+    <section class="mk-destacados mk-oscuro">
       <div class="container">
         <div class="mk-head">
           <h2>Autos destacados</h2>
           <a class="btn btn--line btn--sm" href="#/autos"><span id="mkTotal">Ver todos los autos</span> ${ic('arrow')}</a>
         </div>
+        <div class="mk-buscar--home">${buscador()}</div>
         <div id="mkAutos" class="mk-grid"><p class="mk-cargando">Cargando autos…</p></div>
       </div>
     </section>
@@ -365,7 +300,7 @@
       </div>
     </section>
 
-    <section class="section claro claro--blanco">
+    <section class="section mk-oscuro mk-oscuro--alt">
       <div class="container">
         <div class="section__head">
           <div><span class="eyebrow">Servicios</span><h2>¿Cómo te ayudamos?</h2><p>Dos formas de comprar seguro: revisamos el auto que encontraste, o buscamos el auto por ti.</p></div>
@@ -389,7 +324,7 @@
       </div>
     </section>
 
-    <section class="section claro">
+    <section class="section mk-oscuro">
       <div class="container">
         <div class="section__head"><div><span class="eyebrow">Inspección precompra</span><h2>Así funciona, en 4 pasos</h2></div></div>
         <div class="steps">
