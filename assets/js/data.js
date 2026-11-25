@@ -36,10 +36,10 @@
     { cat: 'Documentos', icon: 'doc', items: ['Permiso de circulación', 'Revisión técnica', 'Seguro obligatorio (SOAP)', 'Historial de mantenciones'] },
   ];
 
-  /* Precio actual del servicio: $50.000, con 50 % de abono para reservar. */
-  const ABONO = 0.5;
+  /* Precio actual del servicio: $49.990. Se reserva con un abono fijo de $25.000. */
+  const ABONO = 25000; // monto fijo del abono, en pesos
   const PLANES = [
-    { id: 'completa', nombre: 'Completa', precio: 50000, desc: 'Autos, SUV y camionetas. Bencina, diésel y alta gama.', incluye: ['Recorrido completo en 8 etapas', 'Medición de pintura pieza por pieza', 'Escáner con parámetros en vivo', 'Prueba de ruta', 'Costo estimado de las reparaciones', 'Informe PDF con fotos', 'Disponible en modalidad remota'] },
+    { id: 'completa', nombre: 'Completa', precio: 49990, desc: 'Autos, SUV y camionetas. Bencina, diésel y alta gama.', incluye: ['Recorrido completo en 8 etapas', 'Medición de pintura pieza por pieza', 'Escáner con parámetros en vivo', 'Prueba de ruta', 'Costo estimado de las reparaciones', 'Informe PDF con fotos', 'Disponible en modalidad remota'] },
   ];
 
   window.ATLAS = { CARS, CHECKLIST, PLANES, ABONO };

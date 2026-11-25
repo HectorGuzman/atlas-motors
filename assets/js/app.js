@@ -91,52 +91,13 @@
   const statusCls = { ok: '', obs: 'w', fail: 'b' };
 
   /* ---------------- componentes ---------------- */
-  const scannerArt = () => `
-    <svg viewBox="0 0 600 460" role="img" aria-label="Escáner automotriz conectado al puerto OBD">
-      <defs>
-        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#cfe9d1"/><stop offset=".45" stop-color="#43a047"/><stop offset="1" stop-color="#2e7d32"/></linearGradient>
-        <linearGradient id="scr" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1b1f1c"/><stop offset="1" stop-color="#0f1110"/></linearGradient>
-        <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#43a047" stop-opacity=".35"/><stop offset="1" stop-color="#43a047" stop-opacity="0"/></radialGradient>
-      </defs>
-      <circle cx="300" cy="230" r="230" fill="url(#glow)"/>
-      <g opacity=".14" stroke="#6cc472">
-        ${Array.from({ length: 12 }, (_, i) => `<line x1="0" y1="${i * 40}" x2="600" y2="${i * 40}"/>`).join('')}
-      </g>
-      <!-- cable -->
-      <path d="M300 395 C 300 440, 470 440, 510 400" stroke="#1a1f1c" stroke-width="14" fill="none" stroke-linecap="round"/>
-      <path d="M300 395 C 300 440, 470 440, 510 400" stroke="url(#g)" stroke-width="3" fill="none" stroke-dasharray="4 10"/>
-      <rect x="490" y="360" width="70" height="44" rx="8" fill="#1a1f1c" stroke="url(#g)" stroke-width="3"/>
-      <g fill="#43a047">${Array.from({ length: 8 }, (_, i) => `<rect x="${500 + i * 7}" y="372" width="3" height="8" rx="1"/>`).join('')}${Array.from({ length: 8 }, (_, i) => `<rect x="${500 + i * 7}" y="386" width="3" height="8" rx="1"/>`).join('')}</g>
-      <text x="525" y="425" fill="#6cc472" font-family="Inter" font-size="12" font-weight="700" text-anchor="middle">OBD-II</text>
-      <!-- device -->
-      <rect x="180" y="40" width="240" height="370" rx="34" fill="#0b0f0c" stroke="url(#g)" stroke-width="5"/>
-      <rect x="204" y="70" width="192" height="190" rx="14" fill="url(#scr)" stroke="#343b36"/>
-      <text x="300" y="98" fill="#6cc472" font-family="Cinzel" font-size="15" font-weight="700" text-anchor="middle" letter-spacing="2">ATLAS SCAN</text>
-      <!-- gauge -->
-      <path d="M240 190 A60 60 0 0 1 360 190" stroke="#2a302c" stroke-width="12" fill="none" stroke-linecap="round"/>
-      <path d="M240 190 A60 60 0 0 1 345 150" stroke="url(#g)" stroke-width="12" fill="none" stroke-linecap="round"/>
-      <line x1="300" y1="190" x2="336" y2="150" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="300" cy="190" r="6" fill="#6cc472"/>
-      <text x="300" y="222" fill="#fff" font-family="Inter" font-size="22" font-weight="800" text-anchor="middle">96/100</text>
-      <text x="300" y="244" fill="#7fd1a2" font-family="Inter" font-size="11" font-weight="600" text-anchor="middle">● 0 CÓDIGOS DE FALLA</text>
-      <!-- buttons -->
-      <circle cx="300" cy="320" r="34" fill="#202522" stroke="url(#g)" stroke-width="3"/>
-      <circle cx="300" cy="320" r="12" fill="url(#g)"/>
-      <rect x="216" y="300" width="34" height="14" rx="7" fill="#2a302c"/><rect x="216" y="326" width="34" height="14" rx="7" fill="#2a302c"/>
-      <rect x="350" y="300" width="34" height="14" rx="7" fill="#2a302c"/><rect x="350" y="326" width="34" height="14" rx="7" fill="#2a302c"/>
-      <!-- chips -->
-      <g font-family="Inter" font-size="12" font-weight="700">
-        <rect x="24" y="92" width="150" height="40" rx="12" fill="#fff"/><circle cx="46" cy="112" r="8" fill="#1f8a4c"/><text x="60" y="116" fill="#1a1f1c">Motor OK</text>
-        <rect x="14" y="160" width="160" height="40" rx="12" fill="#fff"/><circle cx="36" cy="180" r="8" fill="#1f8a4c"/><text x="50" y="184" fill="#1a1f1c">ABS / Airbag OK</text>
-        <rect x="430" y="110" width="150" height="40" rx="12" fill="#fff"/><circle cx="452" cy="130" r="8" fill="#c98a06"/><text x="466" y="134" fill="#1a1f1c">Batería 82 %</text>
-        <rect x="440" y="180" width="140" height="40" rx="12" fill="#fff"/><circle cx="462" cy="200" r="8" fill="#1f8a4c"/><text x="476" y="204" fill="#1a1f1c">Km reales ✓</text>
-      </g>
-    </svg>`;
+  // Escáner animado: vive en assets/js/scanner.js.
+  const scannerArt = () => (window.AtlasScanner ? window.AtlasScanner.html() : '');
 
   // Política del abono. PENDIENTE: confirmar con Matías antes de publicar.
   const ABONO_POLITICA = 'Si avisas con al menos 24 horas de anticipación, cambiamos la fecha sin costo o te devolvemos el abono. Si después de la inspección vendes el auto con nosotros, el valor de la inspección se descuenta de lo que nos corresponde por la venta. Si nosotros no podemos ir, te devolvemos el 100 %. Con menos de 24 horas de aviso, el abono cubre el traslado y no se devuelve.';
   const FAQS = () => [
-    ['¿Cuánto cuesta la inspección?', `La inspección completa vale ${clp(PLANES[0].precio)}. Reservas tu hora con el ${ABONO * 100} % de abono (${clp(PLANES[0].precio * ABONO)}) por transferencia y pagas el resto el día de la inspección.`],
+    ['¿Cuánto cuesta la inspección?', `La inspección completa vale ${clp(PLANES[0].precio)}. Reservas tu hora con un abono de ${clp(ABONO)} por transferencia y pagas el resto el día de la inspección.`],
     ['¿Qué pasa con el abono si hay que cambiar la fecha?', ABONO_POLITICA],
     ['¿Tengo que estar presente?', 'No. Si no puedes ir, hacemos la inspección remota: grabamos todo, te mandamos cada hallazgo con foto por WhatsApp en el momento y después te explicamos el estado real del auto por llamada o audio.'],
     ['¿La inspección es un diagnóstico?', 'No. La inspección precompra busca que no te vendan un auto chocado, con fallas graves escondidas o con el kilometraje alterado. Un diagnóstico requiere el auto varias horas en taller.'],
@@ -231,7 +192,7 @@
     return `
     <section class="mk-portada">
       <div class="mk-portada__fondo" aria-hidden="true"></div>
-      <img class="mk-portada__img" src="assets/img/hero-costanera.webp" alt="" width="1672" height="941" fetchpriority="high" aria-hidden="true">
+      <img class="mk-portada__img" src="assets/img/hero-autos.webp" alt="" width="1916" height="821" fetchpriority="high" aria-hidden="true">
       <div class="mk-portada__verde" aria-hidden="true"></div>
       <div class="container mk-portada__in">
         <div class="mk-portada__text">
@@ -269,12 +230,7 @@
           <p>No solo publicamos autos: primero revisamos su estado, para que compres tranquilo.</p>
           <a class="btn btn--gold" href="#/inspeccion">Conoce la inspección ${ic('arrow')}</a>
         </div>
-        <ol class="mk-proceso" aria-label="Cómo llega un auto a Atlas Motors">
-          <li><span class="mk-proceso__n">1</span>${ic('car')}<b>Revisión completa</b><small>8 etapas</small></li>
-          <li><span class="mk-proceso__n">2</span>${ic('scan')}<b>Escáner profesional</b><small>Todos los módulos</small></li>
-          <li><span class="mk-proceso__n">3</span>${ic('doc')}<b>Informe detallado</b><small>Con fotos</small></li>
-          <li><span class="mk-proceso__n">4</span>${ic('shield')}<b>Publicado con su informe</b><small>A la vista</small></li>
-        </ol>
+        ${window.AtlasViaje ? window.AtlasViaje.html() : ''}
       </div>
     </section>
 
@@ -293,7 +249,7 @@
           <div class="hero__stats">
             <div><b>8</b><span>etapas de revisión</span></div>
             <div><b>${clp(completa.precio)}</b><span>inspección completa</span></div>
-            <div><b>${ABONO * 100} %</b><span>de abono para reservar</span></div>
+            <div><b>${clp(ABONO)}</b><span>de abono para reservar</span></div>
           </div>
         </div>
         <div class="hero__visual">${window.AtlasHistoria ? window.AtlasHistoria.html() : `<div class="scanner-art">${scannerArt()}</div>`}</div>
@@ -329,7 +285,7 @@
         <div class="section__head"><div><span class="eyebrow">Inspección precompra</span><h2>Así funciona, en 4 pasos</h2></div></div>
         <div class="steps">
           <div class="step"><h4>Agenda</h4><p>Cuéntanos qué auto es, dónde está y qué día te acomoda. Aquí o por WhatsApp.</p></div>
-          <div class="step"><h4>Reserva tu hora</h4><p>Con el ${ABONO * 100} % de abono (${clp(completa.precio * ABONO)}) por transferencia. El resto, el día de la inspección.</p></div>
+          <div class="step"><h4>Reserva tu hora</h4><p>Con un abono de ${clp(ABONO)} por transferencia. El resto, el día de la inspección.</p></div>
           <div class="step"><h4>Inspeccionamos</h4><p>8 etapas: carrocería, estructura, motor, parte baja, interior, escáner y prueba de ruta.</p></div>
           <div class="step"><h4>Decide con datos</h4><p>Recibe el informe con fotos y el costo de cada reparación. Compra o negocia con respaldo.</p></div>
         </div>
@@ -1040,7 +996,7 @@
       <div class="container stats">
         <div class="stat"><b>8</b><span>etapas de revisión</span></div>
         <div class="stat"><b>${clp(completa.precio)}</b><span>inspección completa</span></div>
-        <div class="stat"><b>${clp(completa.precio * ABONO)}</b><span>abono para reservar</span></div>
+        <div class="stat"><b>${clp(ABONO)}</b><span>abono para reservar</span></div>
         <div class="stat"><b>2</b><span>modalidades: presencial o remota</span></div>
       </div>
     </section>
@@ -1084,14 +1040,14 @@
 
     <section class="section">
       <div class="container">
-        <div class="section__head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Valores</span><h2>Inspección completa</h2><p style="margin-inline:auto">Reservas tu hora con el ${ABONO * 100} % de abono por transferencia y pagas el resto el día de la inspección.</p></div></div>
+        <div class="section__head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Valores</span><h2>Inspección completa</h2><p style="margin-inline:auto">Reservas tu hora con un abono de ${clp(ABONO)} por transferencia y pagas el resto el día de la inspección.</p></div></div>
         <div class="plans" style="grid-template-columns:minmax(0,1fr);max-width:480px;margin-inline:auto">
           ${PLANES.map((p) => `
             <div class="plan ${p.destacado ? 'featured' : ''}">
               
               <h3>${p.nombre}</h3>
               <div class="amount">${clp(p.precio)} <small>CLP</small></div>
-              <p>${p.desc} Reserva con ${clp(p.precio * ABONO)}.</p>
+              <p>${p.desc} Reserva con ${clp(ABONO)}.</p>
               <ul>${p.incluye.map((i) => `<li>${ic('check')} ${i}</li>`).join('')}</ul>
               <a class="btn ${p.destacado ? 'btn--gold' : 'btn--green'} btn--block" href="#/agendar">${ic('calendar')} Agendar inspección</a>
             </div>`).join('')}
@@ -1195,7 +1151,7 @@
       <div class="container">
         <div class="crumbs"><a href="#/">Inicio</a> / <a href="#/inspeccion">Inspección precompra</a> / Agendar</div>
         <h1>Agenda tu inspección</h1>
-        <p>Elige un día y una hora libre, cuéntanos del auto y la hora queda reservada para ti. La confirmas con el ${ABONO * 100} % de abono. Si no puedes estar presente, la hacemos en modalidad remota.</p>
+        <p>Elige un día y una hora libre, cuéntanos del auto y la hora queda reservada para ti. La confirmas con un abono de ${clp(ABONO)}. Si no puedes estar presente, la hacemos en modalidad remota.</p>
       </div>
     </section>
     <section class="section--tight" style="padding-bottom:88px">
@@ -1224,8 +1180,8 @@
           <h3>¡Tu hora quedó reservada!</h3>
           <p style="font-size:17px;margin:6px 0 0"><b>${diaLargo(booking.date)}, ${booking.time}</b> · código <b>${esc(r.codigo)}</b></p>
           <div class="remote-steps" style="margin-top:18px">
-            <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>Transfiere el abono de ${clp(plan.precio * ABONO)}</b><p>Escríbenos ahora por WhatsApp y te mandamos los datos de la cuenta empresa. Te guardamos la hora hasta las ${esc(hasta)}: si el abono no llega en esa hora, la reserva se cancela sola.</p></div></div>
-            <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>Te confirmamos</b><p>Apenas veamos la transferencia, la inspección queda confirmada. El saldo de ${clp(plan.precio - plan.precio * ABONO)} se paga el día de la inspección.</p></div></div>
+            <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>Transfiere el abono de ${clp(ABONO)}</b><p>Escríbenos ahora por WhatsApp y te mandamos los datos de la cuenta empresa. Te guardamos la hora hasta las ${esc(hasta)}: si el abono no llega en esa hora, la reserva se cancela sola.</p></div></div>
+            <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>Te confirmamos</b><p>Apenas veamos la transferencia, la inspección queda confirmada. El saldo de ${clp(plan.precio - ABONO)} se paga el día de la inspección.</p></div></div>
           </div>
           <p style="margin:16px 0 0;font-size:13.5px;color:var(--muted)">${ABONO_POLITICA}</p>`;
       }
@@ -1279,8 +1235,8 @@
         <p style="color:var(--muted)">Al tocar "Reservar hora", el ${diaLargo(booking.date)} a las ${booking.time} queda guardado para ti y le avisamos a nuestro inspector.</p>
         <div class="remote-steps" style="margin-top:16px">
           <div class="remote-step"><span class="ic">${ic('calendar')}</span><div><b>1. Reservas la hora</b><p>La guardamos por 1 hora para que alcances a transferir.</p></div></div>
-          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(plan.precio * ABONO)}</b><p>El ${ABONO * 100} % del servicio. Te mandamos los datos de la cuenta empresa por WhatsApp. Si avisas con 24 horas, cambiamos la fecha o te lo devolvemos.</p></div></div>
-          <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>3. Inspeccionamos</b><p>El saldo de ${clp(plan.precio - plan.precio * ABONO)} se paga el día de la inspección.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('card')}</span><div><b>2. Transfieres el abono de ${clp(ABONO)}</b><p>El resto lo pagas el día de la inspección. Te mandamos los datos de la cuenta empresa por WhatsApp. Si avisas con 24 horas, cambiamos la fecha o te lo devolvemos.</p></div></div>
+          <div class="remote-step"><span class="ic">${ic('check')}</span><div><b>3. Inspeccionamos</b><p>El saldo de ${clp(plan.precio - ABONO)} se paga el día de la inspección.</p></div></div>
         </div>
         ${booking.error ? `<p class="booking-error" role="alert">${esc(booking.error)} <a href="${waLink(mensajeReserva())}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>.</p>` : ''}`;
     };
@@ -1299,7 +1255,7 @@
             <dt>Modalidad</dt><dd>${d.presente === 'no' ? 'Remota' : 'Presencial'}</dd>
             <dt>Valor</dt><dd>${clp(plan.precio)}</dd>
           </dl>
-          <div class="total"><span>Abono para confirmar</span><span>${clp(plan.precio * ABONO)}</span></div>
+          <div class="total"><span>Abono para confirmar</span><span>${clp(ABONO)}</span></div>
           ${d.comuna === 'Otra comuna' ? '<p style="margin:14px 0 0;font-size:13px;color:var(--muted)">Para otras comunas te confirmamos el traslado por WhatsApp.</p>' : ''}
         </aside>`;
     };
@@ -1594,7 +1550,7 @@
     contarPagina(parts);
     let html, bind, nav = parts[0] || 'home';
     switch (parts[0]) {
-      case undefined: html = viewHome(); bind = () => { bindBuscador(); bindDestacados(); if (window.AtlasHistoria) window.AtlasHistoria.bind(); bindAguila(); bindInstagram(); }; break;
+      case undefined: html = viewHome(); bind = () => { bindBuscador(); bindDestacados(); if (window.AtlasHistoria) window.AtlasHistoria.bind(); if (window.AtlasViaje) window.AtlasViaje.bind(); bindAguila(); bindInstagram(); }; break;
       case 'autos': html = viewAutos(); bind = bindAutos; nav = 'autos'; break;
       case 'auto': html = viewAutoShell(); bind = () => bindAuto(parts[1]); nav = 'autos'; break;
       case 'informe': html = viewInforme(parts[1] || CARS[0].id); nav = 'inspeccion'; break;
